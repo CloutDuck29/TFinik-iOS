@@ -1,7 +1,6 @@
 import SwiftUI
 
 //Окно входа заглушка, работат вывод в консоль того, что ввели в поля ввода
-//Проверка для гитхаба
 struct LoginView: View {
     @State private var email = ""
     @State private var password = ""

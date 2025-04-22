@@ -1,8 +1,11 @@
+//Модель ответа от сервера
 
-//
-//  User.swift
-//  TFinik
-//
-//  Created by CloutMac on 22.04.2025.
-//
+//Чтобы безопасно работать с JSON-ответом от сервера и не разбирать его вручную
+//Если бы не было этой структуры, пришлось бы вручную все искать.
+//Здесь мы прописываем поля, которые нам возвращает бек.
 
+struct TokenPair: Codable{
+    let access_token: String
+    let refresh_token: String
+    let expires_in: Int
+}

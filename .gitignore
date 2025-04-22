@@ -1,0 +1,33 @@
+# Xcode
+build/
+DerivedData/
+*.xcworkspace
+!default.xcworkspace
+xcuserdata/
+*.moved-aside
+*.xcuserstate
+
+# Swift Package Manager
+/.build/
+/Packages/
+/Package.pins
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+
+# Xcode Server
+integration/
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Other
+.DS_Store

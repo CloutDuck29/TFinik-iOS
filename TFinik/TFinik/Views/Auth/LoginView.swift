@@ -6,50 +6,71 @@ struct LoginView: View {
 
     @StateObject private var auth = AuthService()
     @State private var errorMessage: String?
+    
+    @AppStorage("hasOnboarded") private var hasOnboarded = false
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("T‑Finik")
-                .font(.largeTitle)
-                .bold()
+        ZStack {
+            BackgroundView()
 
-            TextField("Email", text: $email)
-                .autocapitalization(.none)
-                .textContentType(.emailAddress)
-                .padding()
-                .background(Color(white: 0.1))
-                .cornerRadius(8)
-
-            SecureField("Пароль", text: $password)
-                .padding()
-                .background(Color(white: 0.1))
-                .cornerRadius(8)
-
-            // Кнопка с модификаторами
-            Button(action: {
-                Task { await auth.login(email: email, password: password) }
-            }) {
-                Text("Войти")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.accentColor)
+            VStack(spacing: 20) {
+                Text("T‑Finik")
+                    .font(.system(size: 36, weight: .bold))
                     .foregroundColor(.white)
-                    .cornerRadius(8)
-            }
-            .disabled(email.isEmpty || password.isEmpty)
+                    .padding(.bottom, 16)
 
-            // Ошибка ниже кнопки
-            if let error = auth.errorMessage {
-                Text(error)
-                    .foregroundColor(.red)
-                    .font(.footnote)
-                    .multilineTextAlignment(.center)
+                // Белое поле Email
+                TextField("Email", text: $email)
+                    .autocapitalization(.none)
+                    .textContentType(.emailAddress)
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .foregroundColor(.black)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+
+                // Белое поле Пароль
+                SecureField("Пароль", text: $password)
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .foregroundColor(.black)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+
+                // Белая кнопка
+                Button(action: {
+                    Task { await auth.login(email: email, password: password) }
+                }) {
+                    Text("Войти")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white)
+                        .foregroundColor(.black)
+                        .cornerRadius(12)
+                        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                }
+                .disabled(email.isEmpty || password.isEmpty)
+
+                // Ошибка ниже кнопки
+                if let error = auth.errorMessage {
+                    Text(error)
+                        .foregroundColor(.red)
+                        .font(.footnote)
+                        .multilineTextAlignment(.center)
+                }
             }
-        }
-        .padding()
-        // Навигация при успешном входе
-        .fullScreenCover(isPresented: $auth.isLoggedIn) {
-            OnboardingStep1View()
+            .frame(maxWidth: 360)
+            .padding()
+            .fullScreenCover(isPresented: $auth.isLoggedIn) {
+                OnboardingPagerView()
+            }
         }
     }
 }

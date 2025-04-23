@@ -6,26 +6,21 @@ final class AuthService: ObservableObject {
     @Published var errorMessage: String?
 
     func login(email: String, password: String) async {
-        // сброс предыдущей ошибки
         errorMessage = nil
 
-        // готовим тело запроса
-        let creds = ["email": email, "password": password]
+        let creds = Creds(email: email, password: password)
         guard let body = try? JSONEncoder().encode(creds) else {
             errorMessage = "Invalid login data"
             return
         }
 
         do {
-            // реальный вызов API
             let tokens: TokenPair = try await APIClient.shared.request(
                 "POST",
                 path: "/auth/login",
                 body: body
             )
-            // сохраняем токены
             KeychainHelper.shared.save(tokens: tokens)
-            // отмечаем успешный логин
             isLoggedIn = true
         } catch let err as APIError {
             switch err {
@@ -38,4 +33,43 @@ final class AuthService: ObservableObject {
             errorMessage = error.localizedDescription
         }
     }
+
+    func register(email: String, password: String) async -> Bool {
+        errorMessage = nil
+
+        let creds = Creds(email: email, password: password)
+        guard let body = try? JSONEncoder().encode(creds) else {
+            errorMessage = "Invalid registration data"
+            return false
+        }
+
+        do {
+            _ = try await APIClient.shared.request(
+                "POST",
+                path: "/auth/register",
+                body: body
+            ) as EmptyResponse
+
+            await login(email: email, password: password)
+            return true
+        } catch let err as APIError {
+            switch err {
+            case .statusCode(let code):
+                errorMessage = "Server returned \(code)"
+            default:
+                errorMessage = "Network error: \(err)"
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+
+        return false
+    }
 }
+
+struct Creds: Codable {
+    let email: String
+    let password: String
+}
+
+struct EmptyResponse: Decodable {}

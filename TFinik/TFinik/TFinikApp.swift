@@ -4,7 +4,7 @@ import SwiftUI
 struct TFinikApp: App {
     var body: some Scene {
         WindowGroup {
-            LoginView()
+            RegisterView()
         }
     }
 }

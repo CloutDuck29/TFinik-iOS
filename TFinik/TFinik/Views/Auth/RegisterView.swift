@@ -6,8 +6,8 @@ struct RegisterView: View {
     @State private var confirmPassword = ""
     @State private var navigateToOnboarding = false
     @State private var errorMessage: String?
-
-    @StateObject private var auth = AuthService()
+    @Binding var hasOnboarded: Bool
+    @EnvironmentObject var auth: AuthService
 
     var body: some View {
         NavigationStack {
@@ -97,7 +97,10 @@ struct RegisterView: View {
                 .padding()
                 .frame(maxWidth: 360)
                 .navigationDestination(isPresented: $navigateToOnboarding) {
-                    RegistrationSuccessView()
+                    RegistrationSuccessView(
+                        navigateToOnboarding: $navigateToOnboarding,
+                        hasOnboarded: $hasOnboarded
+                    )
                 }
             }
         }
@@ -106,7 +109,7 @@ struct RegisterView: View {
 
 struct RegisterView_Previews: PreviewProvider {
     static var previews: some View {
-        RegisterView()
+        RegisterView(hasOnboarded: .constant(false))
             .preferredColorScheme(.dark)
     }
 }

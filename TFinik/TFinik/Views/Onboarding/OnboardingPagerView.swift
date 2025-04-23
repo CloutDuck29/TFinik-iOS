@@ -2,13 +2,11 @@ import SwiftUI
 
 struct OnboardingPagerView: View {
     @State private var page = 0
-    @AppStorage("hasOnboarded") private var hasOnboarded = false
+    @Binding var hasOnboarded: Bool
 
     var body: some View {
         ZStack {
-            // Общий фон
             BackgroundView()
-
             VStack {
                 TabView(selection: $page) {
                     OnboardingStep1View().tag(0)
@@ -25,11 +23,9 @@ struct OnboardingPagerView: View {
                         Capsule()
                             .fill(page == 0 ? Color.white : Color.white.opacity(0.3))
                             .frame(width: page == 0 ? 24 : 8, height: 8)
-
                         Capsule()
                             .fill(page == 1 ? Color.white : Color.white.opacity(0.3))
                             .frame(width: page == 1 ? 24 : 8, height: 8)
-
                         Capsule()
                             .fill(page == 2 ? Color.white : Color.white.opacity(0.3))
                             .frame(width: page == 2 ? 24 : 8, height: 8)
@@ -57,12 +53,5 @@ struct OnboardingPagerView: View {
             }
         }
         .ignoresSafeArea()
-    }
-}
-
-struct OnboardingPagerView_Previews: PreviewProvider {
-    static var previews: some View {
-        OnboardingPagerView()
-            .preferredColorScheme(.dark)
     }
 }

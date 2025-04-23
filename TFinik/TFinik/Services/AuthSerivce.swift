@@ -34,6 +34,7 @@ final class AuthService: ObservableObject {
         }
     }
 
+    @MainActor
     func register(email: String, password: String) async -> Bool {
         errorMessage = nil
 
@@ -50,6 +51,9 @@ final class AuthService: ObservableObject {
                 body: body
             ) as EmptyResponse
 
+            // Устанавливаем hasOnboarded в false
+            UserDefaults.standard.set(false, forKey: "hasOnboarded")
+
             await login(email: email, password: password)
             return true
         } catch let err as APIError {
@@ -65,6 +69,7 @@ final class AuthService: ObservableObject {
 
         return false
     }
+
 }
 
 struct Creds: Codable {

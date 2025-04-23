@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct RegistrationSuccessView: View {
+    @Binding var navigateToOnboarding: Bool
+    @Binding var hasOnboarded: Bool
     @State private var proceed = false
 
     var body: some View {
@@ -39,8 +41,8 @@ struct RegistrationSuccessView: View {
             }
             .frame(maxWidth: 360)
             .padding()
-            .navigationDestination(isPresented: $proceed) {
-                OnboardingPagerView()
+            .navigationDestination(isPresented: $navigateToOnboarding) {
+                OnboardingPagerView(hasOnboarded: $hasOnboarded)
             }
         }
     }

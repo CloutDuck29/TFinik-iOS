@@ -5,14 +5,25 @@ final class KeychainHelper {
     static let shared = KeychainHelper()
     private let service = "com.taigo.TFinik"
 
-    func save(tokens: TokenPair) {
-        save(token: tokens.access_token, key: "access_token")
-        save(token: tokens.refresh_token, key: "refresh_token")
+    func save(tokens: TokenPair?) {
+        if let tokens {
+            save(token: tokens.access_token, key: "access_token")
+            save(token: tokens.refresh_token, key: "refresh_token")
+        } else {
+            deleteToken(key: "access_token")
+            deleteToken(key: "refresh_token")
+        }
     }
 
     func readAccessToken() -> String? {
         readToken(key: "access_token")
     }
+
+    func clear() {
+        save(tokens: nil)
+    }
+
+    // MARK: - Private
 
     private func save(token: String, key: String) {
         let data = Data(token.utf8)
@@ -26,13 +37,22 @@ final class KeychainHelper {
         SecItemAdd(query as CFDictionary, nil)
     }
 
+    private func deleteToken(key: String) {
+        let query: [String: Any] = [
+            kSecClass as String       : kSecClassGenericPassword,
+            kSecAttrService as String : service,
+            kSecAttrAccount as String : key
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
+
     private func readToken(key: String) -> String? {
         let query: [String: Any] = [
-            kSecClass as String      : kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String : true,
-            kSecMatchLimit as String : kSecMatchLimitOne
+            kSecClass as String       : kSecClassGenericPassword,
+            kSecAttrService as String : service,
+            kSecAttrAccount as String : key,
+            kSecReturnData as String  : true,
+            kSecMatchLimit as String  : kSecMatchLimitOne
         ]
         var item: CFTypeRef?
         guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,

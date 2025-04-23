@@ -69,7 +69,7 @@ struct LoginView: View {
             .frame(maxWidth: 360)
             .padding()
             .fullScreenCover(isPresented: $auth.isLoggedIn) {
-                OnboardingPagerView()
+                OnboardingPagerView(hasOnboarded: $hasOnboarded)
             }
         }
     }

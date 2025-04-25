@@ -44,6 +44,7 @@ func uploadPDF(fileURL: URL, completion: @escaping (Result<[Transaction], Error>
                 )
             }
             completion(.success(transactions))
+
         } catch {
             completion(.failure(error))
         }

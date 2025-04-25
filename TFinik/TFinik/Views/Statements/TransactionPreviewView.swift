@@ -13,7 +13,7 @@ struct Transaction: Identifiable {
 struct TransactionPreviewView: View {
     @State var transactions: [Transaction]
     @EnvironmentObject var transactionStore: TransactionStore
-    let categories = ["Покупки", "Доход", "Еда", "Транспорт", "Развлечения"]
+    let categories = ["Покупки", "Доход", "Еда", "Транспорт", "Развлечения", "Другие", "Переводы"]
 
     var body: some View {
         ZStack {

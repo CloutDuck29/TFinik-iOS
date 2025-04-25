@@ -1,10 +1,11 @@
 import Foundation
 
 struct TransactionUploadTransaction: Codable {
-    let bank: String
     let date: String
-    let description: String
+    let time: String?
     let amount: Double
     let isIncome: Bool
+    let description: String
     let category: String
+    let bank: String
 }

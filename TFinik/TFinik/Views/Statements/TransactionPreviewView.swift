@@ -12,6 +12,7 @@ struct Transaction: Identifiable {
 
 struct TransactionPreviewView: View {
     @State var transactions: [Transaction]
+    @EnvironmentObject var transactionStore: TransactionStore
     let categories = ["Покупки", "Доход", "Еда", "Транспорт", "Развлечения"]
 
     var body: some View {
@@ -30,7 +31,7 @@ struct TransactionPreviewView: View {
 
                 ScrollView {
                     LazyVStack(spacing: 16) {
-                        ForEach($transactions) { $tx in
+                        ForEach($transactionStore.transactions) { $tx in
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 4) {
@@ -81,6 +82,20 @@ struct TransactionPreviewView: View {
 
                 Spacer(minLength: 32) // Подняли кнопку чуть выше
 
+                Button("Добавить транзакцию") {
+                    let newTx = Transaction(
+                        bank: "TestBank",
+                        date: "25.04.2025",
+                        description: "Тестовая покупка",
+                        amount: 999.0,
+                        isIncome: false,
+                        category: "Тест"
+                    )
+                    transactionStore.add(newTx)
+                }
+                .foregroundColor(.white)
+
+                
                 Button(action: {
                     // Действие "Продолжить"
                 }) {

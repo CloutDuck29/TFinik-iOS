@@ -91,8 +91,22 @@ struct BankStatementUploadView: View {
                     Button(action: {
                         if selectedBanks.values.contains(true) {
                             let selected = selectedBanks.filter { $0.value }.map { $0.key }
-                            transactionStore.loadMockTransactions(for: selected)
-                            navigateToPreview = true
+                            if let url = Bundle.main.url(forResource: "spravka_o_dvizhenii_denegnyh_sredstv", withExtension: "pdf") {
+                                uploadPDF(fileURL: url) { result in
+                                    DispatchQueue.main.async {
+                                        switch result {
+                                        case .success(let transactions):
+                                            transactionStore.transactions = transactions
+                                            navigateToPreview = true
+                                        case .failure(let error):
+                                            print("Ошибка загрузки PDF: \(error)")
+                                        }
+                                    }
+                                }
+                            } else {
+                                print("PDF-файл не найден")
+                            }
+
                         } else {
                             showAlert = true
                         }

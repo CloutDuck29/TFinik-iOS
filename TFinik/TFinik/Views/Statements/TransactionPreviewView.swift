@@ -46,9 +46,10 @@ struct TransactionPreviewView: View {
 
                                     Spacer()
 
-                                    Text(String(format: "%@%.2f ₽", tx.isIncome ? "+" : "-", tx.amount))
+                                    Text("\(tx.amount, specifier: "%.2f") ₽")
                                         .foregroundColor(tx.isIncome ? .green : .red)
                                         .fontWeight(.semibold)
+
                                 }
 
                                 Menu {
@@ -82,7 +83,7 @@ struct TransactionPreviewView: View {
 
                 Spacer(minLength: 32) // Подняли кнопку чуть выше
 
-                Button("Добавить транзакцию") {
+                Button("Добавить транзакцию (в разраб)") {
                     let newTx = Transaction(
                         bank: "TestBank",
                         date: "25.04.2025",

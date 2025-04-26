@@ -1,4 +1,6 @@
 import SwiftUI
+import Foundation
+import UniformTypeIdentifiers
 
 struct BankWrapper: Identifiable {
     var id: String { bankName }
@@ -90,7 +92,6 @@ struct BankStatementUploadView: View {
 
                     Button(action: {
                         if selectedBanks.values.contains(true) {
-                            let selected = selectedBanks.filter { $0.value }.map { $0.key }
                             if let url = Bundle.main.url(forResource: "spravka_o_dvizhenii_denegnyh_sredstv", withExtension: "pdf") {
                                 uploadPDF(fileURL: url) { result in
                                     DispatchQueue.main.async {
@@ -110,7 +111,8 @@ struct BankStatementUploadView: View {
                         } else {
                             showAlert = true
                         }
-                    }) {
+                    })
+ {
                         Text("Далее →")
                             .font(.headline)
                             .foregroundColor(.black)
@@ -141,6 +143,66 @@ struct BankStatementUploadView: View {
         }
     }
 
+
+    func uploadPDF(fileURL: URL, completion: @escaping (Result<[Transaction], Error>) -> Void) {
+        let boundary = UUID().uuidString
+        var request = URLRequest(url: URL(string: "http://127.0.0.1:8000/transactions/upload")!)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        // Если есть токен, передаем его
+        if let accessToken = KeychainHelper.shared.readAccessToken() {
+            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        }
+
+        var data = Data()
+
+        // Добавляем файл
+        let filename = fileURL.lastPathComponent
+        let mimeType = "application/pdf"
+        let fileData = try? Data(contentsOf: fileURL)
+
+        data.append("--\(boundary)\r\n".data(using: .utf8)!)
+        data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        data.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+        data.append(fileData ?? Data())
+        data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+
+        URLSession.shared.uploadTask(with: request, from: data) { responseData, _, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let responseData = responseData else {
+                completion(.failure(NSError(domain: "Empty response", code: -1)))
+                return
+            }
+
+            do {
+                let decoded = try JSONDecoder().decode(UploadResponse.self, from: responseData)
+                let transactions = decoded.transactions.map { tx in
+                    Transaction(
+                        id: UUID(),                      // <--- обязательно UUID
+                        date: tx.date,
+                        time: tx.time,                   // <--- обязательно time
+                        amount: tx.amount,
+                        isIncome: tx.isIncome,
+                        description: tx.description,
+                        category: tx.category,
+                        bank: tx.bank
+                    )
+                }
+                completion(.success(transactions))
+
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+
+
+    
     private func simulatePDFSelection(for bank: String) {
         if let path = Bundle.main.path(forResource: "spravka_o_dvizhenii_denegnyh_sredstv", ofType: "pdf") {
             let url = URL(fileURLWithPath: path)

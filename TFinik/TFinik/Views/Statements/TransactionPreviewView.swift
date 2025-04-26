@@ -1,18 +1,18 @@
 import SwiftUI
 
-struct Transaction: Identifiable {
-    let id = UUID()
-    let bank: String
+struct Transaction: Identifiable, Codable {
+    var id = UUID()
     let date: String
-    let description: String
+    let time: String?
     let amount: Double
-    let isIncome: Bool
+    var isIncome: Bool
+    var description: String
     var category: String
+    var bank: String
 }
 
 struct TransactionPreviewView: View {
-    @State var transactions: [Transaction]
-    @EnvironmentObject var transactionStore: TransactionStore
+    @State var transactions: [Transaction]  // ✅ Работаем только с локальным списком
     let categories = ["Покупки", "Доход", "Еда", "Транспорт", "Развлечения", "Другие", "Переводы"]
 
     var body: some View {
@@ -27,11 +27,11 @@ struct TransactionPreviewView: View {
                         .foregroundColor(.white)
                     Spacer()
                 }
-                .padding(.top, 95) // Подняли надпись ниже
+                .padding(.top, 95)
 
                 ScrollView {
                     LazyVStack(spacing: 16) {
-                        ForEach($transactionStore.transactions) { $tx in
+                        ForEach($transactions) { $tx in
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 4) {
@@ -49,11 +49,10 @@ struct TransactionPreviewView: View {
                                     Text("\(tx.amount, specifier: "%.2f") ₽")
                                         .foregroundColor(tx.isIncome ? .green : .red)
                                         .fontWeight(.semibold)
-
                                 }
 
                                 Menu {
-                                    ForEach(categories, id: \ .self) { cat in
+                                    ForEach(categories, id: \.self) { cat in
                                         Button(action: {
                                             tx.category = cat
                                         }) {
@@ -81,24 +80,10 @@ struct TransactionPreviewView: View {
                     .padding(.top)
                 }
 
-                Spacer(minLength: 32) // Подняли кнопку чуть выше
+                Spacer(minLength: 32)
 
-                Button("Добавить транзакцию (в разраб)") {
-                    let newTx = Transaction(
-                        bank: "TestBank",
-                        date: "25.04.2025",
-                        description: "Тестовая покупка",
-                        amount: 999.0,
-                        isIncome: false,
-                        category: "Тест"
-                    )
-                    transactionStore.add(newTx)
-                }
-                .foregroundColor(.white)
-
-                
                 Button(action: {
-                    // Действие "Продолжить"
+                    // TODO: переход в аналитику
                 }) {
                     Text("Продолжить")
                         .font(.headline)
@@ -119,9 +104,9 @@ struct TransactionPreviewView: View {
 struct TransactionPreviewView_Previews: PreviewProvider {
     static var previews: some View {
         TransactionPreviewView(transactions: [
-            Transaction(bank: "Tinkoff", date: "22.04.2025", description: "Перевод в магазин", amount: 1300.0, isIncome: false, category: "Покупки"),
-            Transaction(bank: "Sber", date: "21.04.2025", description: "Зарплата", amount: 7000000.0, isIncome: true, category: "Доход"),
-            Transaction(bank: "Tinkoff", date: "20.04.2025", description: "Кофе", amount: 250.0, isIncome: false, category: "Еда")
+            Transaction(id: UUID(), date: "22.04.2025", time: "12:00", amount: 1300, isIncome: false, description: "Перевод в магазин", category: "Покупки", bank: "Tinkoff"),
+            Transaction(id: UUID(), date: "21.04.2025", time: "15:30", amount: 70000, isIncome: true, description: "Зарплата", category: "Доход", bank: "Sber"),
+            Transaction(id: UUID(), date: "20.04.2025", time: "10:15", amount: 250, isIncome: false, description: "Кофе", category: "Еда", bank: "Tinkoff")
         ])
         .preferredColorScheme(.dark)
     }

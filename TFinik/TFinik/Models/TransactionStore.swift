@@ -7,9 +7,28 @@ class TransactionStore: ObservableObject {
     func loadMockTransactions(for banks: [String]) {
         // Пример моков:
         transactions = [
-            Transaction(bank: "Tinkoff", date: "22.04.2025", description: "Перевод", amount: 1300, isIncome: false, category: "Покупки"),
-            Transaction(bank: "Sber", date: "21.04.2025", description: "Зарплата", amount: 70000, isIncome: true, category: "Доход")
+            Transaction(
+                id: UUID(),
+                date: "22.04.2025",
+                time: "12:00", // или nil, если времени нет
+                amount: 1300,
+                isIncome: false,
+                description: "Перевод",
+                category: "Покупки",
+                bank: "Tinkoff"
+            ),
+            Transaction(
+                id: UUID(),
+                date: "21.04.2025",
+                time: "15:30", // или nil
+                amount: 70000,
+                isIncome: true,
+                description: "Зарплата",
+                category: "Доход",
+                bank: "Sber"
+            )
         ].filter { banks.contains($0.bank) }
+
     }
 
     func add(_ transaction: Transaction) {

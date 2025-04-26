@@ -183,7 +183,7 @@ struct BankStatementUploadView: View {
                 let decoded = try JSONDecoder().decode(UploadResponse.self, from: responseData)
                 let transactions = decoded.transactions.map { tx in
                     Transaction(
-                        id: UUID(),                      // <--- обязательно UUID
+                        id: tx.id,                     // <--- обязательно UUID
                         date: tx.date,
                         time: tx.time,                   // <--- обязательно time
                         amount: tx.amount,

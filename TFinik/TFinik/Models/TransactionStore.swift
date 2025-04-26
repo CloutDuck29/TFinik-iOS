@@ -8,7 +8,7 @@ class TransactionStore: ObservableObject {
         // Пример моков:
         transactions = [
             Transaction(
-                id: UUID(),
+                id: 1,
                 date: "22.04.2025",
                 time: "12:00", // или nil, если времени нет
                 amount: 1300,
@@ -18,7 +18,7 @@ class TransactionStore: ObservableObject {
                 bank: "Tinkoff"
             ),
             Transaction(
-                id: UUID(),
+                id: 2,
                 date: "21.04.2025",
                 time: "15:30", // или nil
                 amount: 70000,

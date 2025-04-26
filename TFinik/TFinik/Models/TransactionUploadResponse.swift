@@ -6,14 +6,16 @@ struct UploadResponse: Codable {
 }
 
 struct ServerTransaction: Codable {
+    let id: Int            // 🛠️ Добавляем сюда
     let date: String
-    let time: String?      // обязательно, потому что твоя Transaction ожидает time
+    let time: String?
     let amount: Double
     let isIncome: Bool
     let description: String
     let category: String
     let bank: String
 }
+
 
 struct Period: Codable {
     let start: String

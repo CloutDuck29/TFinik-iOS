@@ -12,14 +12,14 @@ struct Transaction: Identifiable, Codable {
 }
 
 struct TransactionPreviewView: View {
-    @State var transactions: [Transaction]  // ✅ Работаем только с локальным списком
+    @State var transactions: [Transaction]
     let categories = ["Покупки", "Доход", "Еда", "Транспорт", "Развлечения", "Другие", "Переводы"]
 
     var body: some View {
         ZStack {
             BackgroundView()
             
-            VStack(spacing: 16) {
+            VStack(spacing: 0) {
                 HStack {
                     Spacer()
                     Text("Предпросмотр транзакций")
@@ -28,6 +28,7 @@ struct TransactionPreviewView: View {
                     Spacer()
                 }
                 .padding(.top, 95)
+                .padding(.bottom, 16)
                 
                 ScrollView {
                     LazyVStack(spacing: 16) {
@@ -72,45 +73,51 @@ struct TransactionPreviewView: View {
                                         Text(tx.category)
                                         Image(systemName: "chevron.down")
                                     }
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.white.opacity(0.05))
+                                    .cornerRadius(12)
                                 }
-                                .padding()
-                                .background(Color.white.opacity(0.05))
-                                .cornerRadius(12)
-                                .padding(.horizontal)
                             }
-                        }
-                        .padding(.top)
-                    }
-                    
-                    Spacer(minLength: 32)
-                    
-                    Button(action: {
-                        // TODO: переход в аналитику
-                    }) {
-                        Text("Продолжить")
-                            .font(.headline)
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.white)
-                            .cornerRadius(12)
+                            .background(Color.white.opacity(0.05))
+                            .cornerRadius(16)
                             .padding(.horizontal)
+                        }
+                        
+                        // 📢 ДОБАВИЛИ ОТСТУП перед кнопкой!
+                        Spacer().frame(height: 24)
                     }
+                    .padding(.top)
                     .padding(.bottom, 32)
                 }
+                
+                Button(action: {
+                    // TODO: переход в аналитику
+                }) {
+                    Text("Продолжить")
+                        .font(.headline)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                }
+                .padding(.bottom, 32)
             }
             .ignoresSafeArea()
         }
     }
 }
 
-    struct TransactionPreviewView_Previews: PreviewProvider {
-        static var previews: some View {
-            TransactionPreviewView(transactions: [
-                Transaction(id: 1, date: "22.04.2025", time: "12:00", amount: 1300, isIncome: false, description: "Перевод в магазин", category: "Покупки", bank: "Tinkoff"),
-                Transaction(id: 2, date: "21.04.2025", time: "15:30", amount: 70000, isIncome: true, description: "Зарплата", category: "Доход", bank: "Sber"),
-                Transaction(id: 3, date: "20.04.2025", time: "10:15", amount: 250, isIncome: false, description: "Кофе", category: "Еда", bank: "Tinkoff")
-            ])
-            .preferredColorScheme(.dark)
-        }
+struct TransactionPreviewView_Previews: PreviewProvider {
+    static var previews: some View {
+        TransactionPreviewView(transactions: [
+            Transaction(id: 1, date: "22.04.2025", time: "12:00", amount: 1300, isIncome: false, description: "Перевод в магазин", category: "Покупки", bank: "Tinkoff"),
+            Transaction(id: 2, date: "21.04.2025", time: "15:30", amount: 70000, isIncome: true, description: "Зарплата", category: "Доход", bank: "Sber"),
+            Transaction(id: 3, date: "20.04.2025", time: "10:15", amount: 250, isIncome: false, description: "Кофе", category: "Еда", bank: "Tinkoff")
+        ])
+        .preferredColorScheme(.dark)
     }
+}

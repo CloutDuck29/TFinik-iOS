@@ -12,13 +12,15 @@ struct Transaction: Identifiable, Codable {
 }
 
 struct TransactionPreviewView: View {
+    @State private var navigateToAnalytics = false
     @State var transactions: [Transaction]
+    
     let categories = ["Покупки", "Доход", "Еда", "Транспорт", "Развлечения", "Другие", "Переводы"]
 
     var body: some View {
         ZStack {
             BackgroundView()
-            
+
             VStack(spacing: 0) {
                 HStack {
                     Spacer()
@@ -29,7 +31,7 @@ struct TransactionPreviewView: View {
                 }
                 .padding(.top, 95)
                 .padding(.bottom, 16)
-                
+
                 ScrollView {
                     LazyVStack(spacing: 16) {
                         ForEach($transactions) { $tx in
@@ -39,19 +41,19 @@ struct TransactionPreviewView: View {
                                         Text(tx.description)
                                             .font(.headline)
                                             .foregroundColor(.white)
-                                        
+
                                         Text("\(tx.bank) • \(tx.date)")
                                             .font(.caption)
                                             .foregroundColor(.gray)
                                     }
-                                    
+
                                     Spacer()
-                                    
+
                                     Text("\(tx.amount, specifier: "%.2f") ₽")
                                         .foregroundColor(tx.isIncome ? .green : .red)
                                         .fontWeight(.semibold)
                                 }
-                                
+
                                 Menu {
                                     ForEach(categories, id: \.self) { cat in
                                         Button(action: {
@@ -84,30 +86,32 @@ struct TransactionPreviewView: View {
                             .cornerRadius(16)
                             .padding(.horizontal)
                         }
-                        
-                        // 📢 ДОБАВИЛИ ОТСТУП перед кнопкой!
+
                         Spacer().frame(height: 24)
                     }
                     .padding(.top)
                     .padding(.bottom, 32)
                 }
-                
-                Button(action: {
-                    // TODO: переход в аналитику
-                }) {
-                    Text("Продолжить")
-                        .font(.headline)
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .padding(.horizontal)
+
+                NavigationLink(destination: ExpensesChartView(), isActive: $navigateToAnalytics) {
+                    Button(action: {
+                        navigateToAnalytics = true
+                    }) {
+                        Text("Продолжить")
+                            .font(.headline)
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .padding(.horizontal)
+                    }
                 }
                 .padding(.bottom, 32)
             }
             .ignoresSafeArea()
         }
+        .navigationBarBackButtonHidden(true) // Скрываем кнопку back на текущем экране
     }
 }
 

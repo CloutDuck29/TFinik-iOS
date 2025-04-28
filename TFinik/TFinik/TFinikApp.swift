@@ -8,9 +8,17 @@ struct TFinikApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(hasOnboarded: $hasOnboarded)
-                .environmentObject(auth)
-                .environmentObject(transactionStore)
+            if hasOnboarded {
+                NavigationStack {
+                    MainBabView()
+                        .environmentObject(auth)
+                        .environmentObject(transactionStore)
+                }
+            } else {
+                ContentView(hasOnboarded: $hasOnboarded)
+                    .environmentObject(auth)
+                    .environmentObject(transactionStore)
+            }
         }
     }
 }

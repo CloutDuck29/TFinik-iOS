@@ -33,6 +33,7 @@ struct ExpensesChartView: View {
     @State private var loadedPeriodStart: String = ""
     @State private var loadedPeriodEnd: String = ""
     @State private var loadedCategories: [ExpenseCategory] = []
+    @State private var isUnauthorized = false
 
     var body: some View {
         ZStack {
@@ -64,7 +65,6 @@ struct ExpensesChartView: View {
                             .foregroundColor(.white)
                     }
 
-                    // Используем ForEach для отображения только действительных категорий
                     ScrollView {
                         VStack(spacing: 12) {
                             ForEach(loadedCategories) { category in
@@ -88,12 +88,16 @@ struct ExpensesChartView: View {
                 .padding()
             }
         }
+        .fullScreenCover(isPresented: $isUnauthorized) {
+            LoginView()
+        }
         .navigationBarBackButtonHidden(false)
         .ignoresSafeArea()
         .onAppear {
             loadAnalytics()
         }
     }
+
 
     private func loadAnalytics() {
         if TokenStorage.shared.accessToken == nil {
@@ -115,6 +119,25 @@ struct ExpensesChartView: View {
                 return
             }
 
+            if let response = response as? HTTPURLResponse, response.statusCode == 401 {
+                print("⚠️ Получили 401 — пробуем обновить токен")
+                
+                AuthService().refreshAccessTokenIfNeeded { success in
+                    if success {
+                        print("✅ Токен обновлён, повторяем запрос")
+                        DispatchQueue.main.async {
+                            self.loadAnalytics() // ПОВТОРЯЕМ запрос
+                        }
+                    } else {
+                        print("❌ Не удалось обновить токен, перенаправляем на авторизацию")
+                        DispatchQueue.main.async {
+                            self.isUnauthorized = true
+                        }
+                    }
+                }
+                return
+            }
+
             guard let data = data else {
                 print("❌ Нет данных в ответе")
                 return
@@ -131,25 +154,41 @@ struct ExpensesChartView: View {
                         ExpenseCategory(
                             name: cat.category,
                             amount: cat.amount,
-                            color: randomColor(for: cat.category)
+                            color: color(for: cat.category)
                         )
                     }
                     self.isLoading = false
                 }
             } catch {
-                print("❌ Ошибка декодирования: \(error.localizedDescription)")
-                if let json = String(data: data, encoding: .utf8) {
-                    print("Ответ сервера: \(json)")
+                DispatchQueue.main.async {
+                    print("❌ Ошибка декодирования: \(error.localizedDescription)")
+                    if let json = String(data: data, encoding: .utf8) {
+                        print("Ответ сервера: \(json)")
+                    }
                 }
             }
         }.resume()
     }
 
-    private func randomColor(for category: String) -> Color {
-        let colors: [Color] = [.green, .purple, .yellow, .orange, .blue, .pink, .red]
-        return colors[abs(category.hashValue) % colors.count]
+    
+    private func color(for category: String) -> Color {
+        let colorMapping: [String: Color] = [
+            "Кофейни": .orange,
+            "Магазины": .blue,
+            "Транспорт": .purple,
+            "Доставка/Еда": .brown,
+            "Развлечения": .green,
+            "Пополнение": .gray,
+            "ЖКХ/Коммуналка": .teal,
+            "Переводы": .red,
+            "Другие": .mint
+        ]
+        
+        return colorMapping[category] ?? .gray
     }
+
 }
+
 
 // MARK: - Кастомная PieChart диаграмма
 struct PieChartView: View {

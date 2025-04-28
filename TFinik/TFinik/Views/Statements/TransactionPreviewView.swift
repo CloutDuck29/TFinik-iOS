@@ -15,7 +15,7 @@ struct TransactionPreviewView: View {
     @State private var navigateToAnalytics = false
     @State var transactions: [Transaction]
     
-    let categories = ["Кофейни", "Магазины", "Транспорт", "Доставка/Еда", "Развлечения", "Пополнение", "ЖКХ/Коммуналка", "Переводы"]
+    let categories = ["Кофейни", "Магазины", "Транспорт", "Доставка/Еда", "Развлечения", "Пополнение", "ЖКХ/Коммуналка", "Переводы", "Другие"]
 
     var body: some View {
         ZStack {

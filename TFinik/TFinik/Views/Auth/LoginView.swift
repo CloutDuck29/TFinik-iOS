@@ -3,11 +3,12 @@ import SwiftUI
 struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
-
-    @StateObject private var auth = AuthService()
     @State private var errorMessage: String?
-    
+
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var auth: AuthService
     @AppStorage("hasOnboarded") private var hasOnboarded = false
+    @AppStorage("selectedTab") private var selectedTab: String = "expenses" // Для выбора вкладки
 
     var body: some View {
         ZStack {
@@ -40,12 +41,18 @@ struct LoginView: View {
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Color.white.opacity(0.2), lineWidth: 1)
                     )
-                
+
                 Button(action: {
                     Task {
-                        await fetchAndStoreToken(email: email, password: password)
-                        auth.isLoggedIn = true
-                        await uploadBankStatementIfNeeded()
+                        let success = await fetchAndStoreToken(email: email, password: password)
+                        if success {
+                            hasOnboarded = true       // Пользователь прошёл онбординг
+                            selectedTab = "analytics" // Сразу переходим на аналитику
+                            auth.isLoggedIn = true    // Авторизован
+                            dismiss()                // Закрываем LoginView
+                        } else {
+                            errorMessage = "Ошибка входа. Проверьте email и пароль."
+                        }
                     }
                 }) {
                     Text("Войти")
@@ -58,17 +65,24 @@ struct LoginView: View {
                         .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
                 }
                 .disabled(email.isEmpty || password.isEmpty)
+
+                if let error = errorMessage {
+                    Text(error)
+                        .foregroundColor(.red)
+                        .font(.footnote)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 8)
+                }
             }
             .frame(maxWidth: 360)
             .padding()
         }
-        .fullScreenCover(isPresented: $auth.isLoggedIn) {
-            OnboardingPagerView(hasOnboarded: $hasOnboarded)
-        }
+        .ignoresSafeArea()
     }
     
-    func fetchAndStoreToken(email: String, password: String) async {
-        guard let url = URL(string: "http://127.0.0.1:8000/auth/login") else { return }
+    // MARK: - Получение токена
+    func fetchAndStoreToken(email: String, password: String) async -> Bool {
+        guard let url = URL(string: "http://127.0.0.1:8000/auth/login") else { return false }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -86,10 +100,14 @@ struct LoginView: View {
             KeychainHelper.shared.save(tokens: tokens)
 
             print("✅ Токены сохранены")
+            return true
         } catch {
             print("❌ Ошибка получения токена: \(error.localizedDescription)")
+            return false
         }
     }
+
+
     
     func uploadBankStatementIfNeeded() async {
         guard let token = TokenStorage.shared.accessToken else {

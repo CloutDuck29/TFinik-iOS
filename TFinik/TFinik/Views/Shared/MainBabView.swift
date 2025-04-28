@@ -10,9 +10,9 @@ struct MainBabView: View {
                 case "expenses":
                     ExpensesChartView()
                 case "analytics":
-                    ExpensesChartView()
+                    AnalyticsMenuView()
                 case "profile":
-                    ExpensesChartView()
+                    ProfileMenuView()
                 default:
                     ExpensesChartView()
                 }

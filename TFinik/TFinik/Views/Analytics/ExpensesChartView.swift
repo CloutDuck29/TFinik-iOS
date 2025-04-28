@@ -44,13 +44,15 @@ struct ExpensesChartView: View {
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
             } else {
                 VStack(spacing: 24) {
-                    Text("\u{1F4B0}")
-                        .font(.system(size: 40))
-                        .padding(.top, 40)
-
-                    Text("Аналитика по тратам")
-                        .font(.title2.bold())
-                        .foregroundColor(.white)
+                    HStack {
+                        Text("💰")
+                            .font(.system(size: 32))
+                        Text("Анализ расходов")
+                            .font(.title2.bold())
+                            .foregroundColor(.white)
+                    }
+                    .padding(.top, 125) // Уменьшаем верхний отступ, чтобы поднять заголовок
+                
 
                     PieChartView(categories: loadedCategories)
                         .frame(height: 250)

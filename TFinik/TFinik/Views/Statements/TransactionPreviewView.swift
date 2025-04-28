@@ -57,13 +57,15 @@ struct TransactionPreviewView: View {
                                 Menu {
                                     ForEach(categories, id: \.self) { cat in
                                         Button(action: {
-                                            tx.category = cat
-                                            updateTransactionCategory(transactionID: tx.id, newCategory: cat) { result in
-                                                switch result {
-                                                case .success:
-                                                    print("✅ Категория обновлена")
-                                                case .failure(let error):
-                                                    print("❌ Ошибка обновления категории: \(error.localizedDescription)")
+                                            withAnimation {
+                                                tx.category = cat
+                                                updateTransactionCategory(transactionID: tx.id, newCategory: cat) { result in
+                                                    switch result {
+                                                    case .success:
+                                                        print("✅ Категория обновлена")
+                                                    case .failure(let error):
+                                                        print("❌ Ошибка обновления категории: \(error.localizedDescription)")
+                                                    }
                                                 }
                                             }
                                         }) {
@@ -85,6 +87,8 @@ struct TransactionPreviewView: View {
                             .background(Color.white.opacity(0.05))
                             .cornerRadius(16)
                             .padding(.horizontal)
+                            .id(tx.id) // Добавим уникальный id для элемента
+                            .animation(.easeInOut(duration: 0.2), value: tx.category) // Плавная анимация
                         }
 
                         Spacer().frame(height: 24)

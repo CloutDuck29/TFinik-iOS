@@ -64,19 +64,22 @@ struct ExpensesChartView: View {
                             .foregroundColor(.white)
                     }
 
-                    VStack(spacing: 12) {
-                        ForEach(loadedCategories) { category in
-                            HStack {
-                                Circle()
-                                    .fill(category.color)
-                                    .frame(width: 12, height: 12)
-                                Text(category.name)
-                                    .foregroundColor(.white)
-                                Spacer()
-                                Text("\(Int(category.amount))₽")
-                                    .foregroundColor(.white)
+                    // Используем ForEach для отображения только действительных категорий
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(loadedCategories) { category in
+                                HStack {
+                                    Circle()
+                                        .fill(category.color)
+                                        .frame(width: 12, height: 12)
+                                    Text(category.name)
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Text("\(Int(category.amount))₽")
+                                        .foregroundColor(.white)
+                                }
+                                .padding(.horizontal)
                             }
-                            .padding(.horizontal)
                         }
                     }
 
@@ -85,7 +88,7 @@ struct ExpensesChartView: View {
                 .padding()
             }
         }
-        .navigationBarBackButtonHidden(false) // <<< Важно: показываем только встроенную кнопку Back
+        .navigationBarBackButtonHidden(false)
         .ignoresSafeArea()
         .onAppear {
             loadAnalytics()

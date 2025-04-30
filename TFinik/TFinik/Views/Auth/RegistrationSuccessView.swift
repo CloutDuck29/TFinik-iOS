@@ -8,24 +8,24 @@ struct RegistrationSuccessView: View {
     var body: some View {
         ZStack {
             BackgroundView()
-
+            
             VStack(spacing: 24) {
                 Spacer()
-
+                
                 Text("Аккаунт успешно создан!")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
-
+                
                 Text("Вы вошли в систему. Повторная авторизация потребуется раз в месяц.")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.8))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
-
+                
                 Spacer()
-
+                
                 Button(action: {
                     proceed = true
                 }) {
@@ -42,8 +42,11 @@ struct RegistrationSuccessView: View {
             .frame(maxWidth: 360)
             .padding()
             .navigationDestination(isPresented: $navigateToOnboarding) {
-                OnboardingPagerView(hasOnboarded: $hasOnboarded)
+                NavigationStack {
+                    OnboardingPagerView(hasOnboarded: $hasOnboarded)
+                }
             }
+            
         }
     }
 }

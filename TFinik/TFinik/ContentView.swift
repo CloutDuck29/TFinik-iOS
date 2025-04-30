@@ -6,14 +6,16 @@ struct ContentView: View {
     @State private var hasShownWelcome: Bool = false
 
     var body: some View {
-        if !auth.isLoggedIn {
-            RegisterView(hasOnboarded: $hasOnboarded)
-        } else if !hasOnboarded {
-            OnboardingPagerView(hasOnboarded: $hasOnboarded)
-        } else if !hasShownWelcome {
-            WelcomeView(hasShownWelcome: $hasShownWelcome)
-        } else {
-            BankStatementUploadView()
+        NavigationStack {
+            if !auth.isLoggedIn {
+                RegisterView(hasOnboarded: $hasOnboarded)
+            } else if !hasOnboarded {
+                OnboardingPagerView(hasOnboarded: $hasOnboarded)
+            } else if !hasShownWelcome {
+                WelcomeView(hasShownWelcome: $hasShownWelcome)
+            } else {
+                BankStatementUploadView(hasOnboarded: $hasOnboarded)
+            }
         }
     }
 }

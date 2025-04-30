@@ -22,5 +22,15 @@
 			</dict>
 		</dict>
 	</dict>
+
+	<!-- 📂 Разрешаем работу с документами -->
+	<key>UISupportsDocumentBrowser</key>
+	<true/>
+
+	<!-- 🗂️ (опционально) Разрешаем доступ к файлам и iCloud -->
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
 </dict>
 </plist>

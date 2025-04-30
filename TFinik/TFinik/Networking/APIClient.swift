@@ -6,7 +6,7 @@ enum APIError: Error {
 
 final class APIClient {
   static let shared = APIClient()
-  private let baseURL = URL(string: "http://127.0.0.1:8000")!  // или ваш прод‑URL
+  private let baseURL = URL(string: "http://169.254.218.217:8000")!  // или ваш прод‑URL
 
   func request<T: Decodable>(
     _ method: String = "GET",

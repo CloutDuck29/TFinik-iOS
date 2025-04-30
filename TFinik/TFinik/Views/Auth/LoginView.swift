@@ -7,8 +7,7 @@ struct LoginView: View {
 
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var auth: AuthService
-    @AppStorage("hasOnboarded") private var hasOnboarded = false
-    @AppStorage("selectedTab") private var selectedTab: String = "expenses" // Для выбора вкладки
+    @AppStorage("selectedTab") private var selectedTab: String = "expenses"
 
     var body: some View {
         ZStack {
@@ -46,10 +45,9 @@ struct LoginView: View {
                     Task {
                         let success = await fetchAndStoreToken(email: email, password: password)
                         if success {
-                            hasOnboarded = true       // Пользователь прошёл онбординг
-                            selectedTab = "analytics" // Сразу переходим на аналитику
-                            auth.isLoggedIn = true    // Авторизован
-                            dismiss()                // Закрываем LoginView
+                            selectedTab = "analytics"
+                            auth.isLoggedIn = true
+                            dismiss()
                         } else {
                             errorMessage = "Ошибка входа. Проверьте email и пароль."
                         }
@@ -82,7 +80,7 @@ struct LoginView: View {
     
     // MARK: - Получение токена
     func fetchAndStoreToken(email: String, password: String) async -> Bool {
-        guard let url = URL(string: "http://127.0.0.1:8000/auth/login") else { return false }
+        guard let url = URL(string: "http://169.254.218.217:8000/auth/login") else { return false }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -95,11 +93,20 @@ struct LoginView: View {
             let (data, _) = try await URLSession.shared.data(for: request)
 
             let tokens = try JSONDecoder().decode(TokenPair.self, from: data)
-            
-            TokenStorage.shared.accessToken = tokens.access_token
+
+            auth.isLoggedIn = true
+            auth.errorMessage = nil
             KeychainHelper.shared.save(tokens: tokens)
 
-            print("✅ Токены сохранены")
+            if let saved = KeychainHelper.shared.readAccessToken() {
+                print("✅ Токен сохранён и успешно считан из Keychain: \(saved)")
+            } else {
+                print("❌ Токен не сохранился или не читается из Keychain")
+            }
+
+            print("📦 Access: \(tokens.access_token)")
+            print("📦 Refresh: \(tokens.refresh_token)")
+
             return true
         } catch {
             print("❌ Ошибка получения токена: \(error.localizedDescription)")
@@ -107,8 +114,7 @@ struct LoginView: View {
         }
     }
 
-
-    
+    // 👇 Это можно удалить, если больше не используешь
     func uploadBankStatementIfNeeded() async {
         guard let token = TokenStorage.shared.accessToken else {
             print("❌ Нет токена для загрузки выписки")
@@ -121,7 +127,7 @@ struct LoginView: View {
         }
 
         do {
-            var request = URLRequest(url: URL(string: "http://127.0.0.1:8000/transactions/upload")!)
+            var request = URLRequest(url: URL(string: "http://169.254.218.217:8000/transactions/upload")!)
             request.httpMethod = "POST"
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 

@@ -3,6 +3,8 @@ import SwiftUI
 struct ProfileMenuView: View {
     @AppStorage("selectedTab") private var selectedTab: String = "analytics"
     @State private var isShowingBankUploadView = false
+    @EnvironmentObject var auth: AuthService
+
 
     var body: some View {
         NavigationStack {
@@ -41,6 +43,7 @@ struct ProfileMenuView: View {
             .ignoresSafeArea()
             .navigationDestination(isPresented: $isShowingBankUploadView) {
                 BankUploadView()
+                    .environmentObject(auth)
             }
         }
     }

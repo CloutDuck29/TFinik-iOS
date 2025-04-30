@@ -3,10 +3,12 @@ import SwiftUI
 struct OnboardingPagerView: View {
     @State private var page = 0
     @Binding var hasOnboarded: Bool
+    @State private var navigateToUpload = false
 
     var body: some View {
         ZStack {
             BackgroundView()
+
             VStack {
                 TabView(selection: $page) {
                     OnboardingStep1View().tag(0)
@@ -37,7 +39,8 @@ struct OnboardingPagerView: View {
                         if page < 2 {
                             page += 1
                         } else {
-                            hasOnboarded = true
+                            navigateToUpload = true
+                            // 🔥 НЕ УСТАНАВЛИВАЕМ hasOnboarded ЗДЕСЬ
                         }
                     }) {
                         Image(systemName: "arrow.right")
@@ -50,6 +53,15 @@ struct OnboardingPagerView: View {
                 }
                 .padding(.horizontal, 32)
                 .padding(.bottom, 30)
+
+                NavigationLink(
+                    destination: BankStatementUploadView(hasOnboarded: $hasOnboarded)
+                        .environmentObject(TransactionStore()),
+                    isActive: $navigateToUpload
+                ) {
+                    EmptyView()
+                }
+
             }
         }
         .ignoresSafeArea()

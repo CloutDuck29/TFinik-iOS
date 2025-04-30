@@ -14,6 +14,7 @@ struct Transaction: Identifiable, Codable {
 struct TransactionPreviewView: View {
     @State private var navigateToAnalytics = false
     @State var transactions: [Transaction]
+    @AppStorage("hasUploadedStatement") private var hasUploadedStatement = false
     
     let categories = ["Кофейни", "Магазины", "Транспорт", "Доставка/Еда", "Развлечения", "Пополнение", "ЖКХ/Коммуналка", "Переводы", "Другие"]
 
@@ -87,8 +88,8 @@ struct TransactionPreviewView: View {
                             .background(Color.white.opacity(0.05))
                             .cornerRadius(16)
                             .padding(.horizontal)
-                            .id(tx.id) // Добавим уникальный id для элемента
-                            .animation(.easeInOut(duration: 0.2), value: tx.category) // Плавная анимация
+                            .id(tx.id)
+                            .animation(.easeInOut(duration: 0.2), value: tx.category)
                         }
 
                         Spacer().frame(height: 24)
@@ -98,34 +99,26 @@ struct TransactionPreviewView: View {
                 }
 
                 NavigationLink(destination: ExpensesChartView(), isActive: $navigateToAnalytics) {
-                    Button(action: {
-                        navigateToAnalytics = true
-                    }) {
-                        Text("Продолжить")
-                            .font(.headline)
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .padding(.horizontal)
-                    }
+                    EmptyView()
+                }
+
+                Button(action: {
+                    hasUploadedStatement = true
+                    navigateToAnalytics = true
+                }) {
+                    Text("Продолжить")
+                        .font(.headline)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .padding(.horizontal)
                 }
                 .padding(.bottom, 32)
             }
             .ignoresSafeArea()
         }
-        .navigationBarBackButtonHidden(true) // Скрываем кнопку back на текущем экране
-    }
-}
-
-struct TransactionPreviewView_Previews: PreviewProvider {
-    static var previews: some View {
-        TransactionPreviewView(transactions: [
-            Transaction(id: 1, date: "22.04.2025", time: "12:00", amount: 1300, isIncome: false, description: "Перевод в магазин", category: "Покупки", bank: "Tinkoff"),
-            Transaction(id: 2, date: "21.04.2025", time: "15:30", amount: 70000, isIncome: true, description: "Зарплата", category: "Доход", bank: "Sber"),
-            Transaction(id: 3, date: "20.04.2025", time: "10:15", amount: 250, isIncome: false, description: "Кофе", category: "Еда", bank: "Tinkoff")
-        ])
-        .preferredColorScheme(.dark)
+        .navigationBarBackButtonHidden(true)
     }
 }

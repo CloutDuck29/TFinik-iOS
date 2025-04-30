@@ -26,6 +26,7 @@ final class KeychainHelper {
     // MARK: - Private
 
     private func save(token: String, key: String) {
+        print("💾 Сохраняю токен с ключом \(key)")
         let data = Data(token.utf8)
         let query: [String: Any] = [
             kSecClass as String       : kSecClassGenericPassword,
@@ -34,8 +35,10 @@ final class KeychainHelper {
             kSecValueData as String   : data
         ]
         SecItemDelete(query as CFDictionary)
-        SecItemAdd(query as CFDictionary, nil)
+        let status = SecItemAdd(query as CFDictionary, nil)
+        print("🔐 Status сохранения: \(status == errSecSuccess ? "Успех" : "Ошибка: \(status)")")
     }
+
 
     private func deleteToken(key: String) {
         let query: [String: Any] = [

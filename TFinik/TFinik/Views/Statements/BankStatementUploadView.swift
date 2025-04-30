@@ -9,44 +9,28 @@ struct BankWrapper: Identifiable {
 
 struct BankStatementUploadView: View {
     @EnvironmentObject var transactionStore: TransactionStore
-    @State private var selectedBanks: [String: Bool] = [
-        "Tinkoff": false,
-        "Sber": true,
-        "Alfa": true,
-        "VTB": true
-    ]
-    
+    @State private var selectedFiles: [String: URL] = [:]
     @State private var showingDocumentPickerForBank: BankWrapper? = nil
     @State private var showAlert = false
     @State private var navigateToPreview = false
+    @Binding var hasOnboarded: Bool
+    @AppStorage("hasUploadedStatement") private var hasUploadedStatement = false
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                BackgroundView()
+        ZStack {
+            BackgroundView()
 
+            ScrollView {
                 VStack(spacing: 24) {
-                    HStack {
-                        Button(action: {
-                            // Назад
-                        }) {
-                            Image(systemName: "chevron.left")
-                                .foregroundColor(.white)
-                                .font(.title2)
-                        }
-                        Spacer()
-                    }
-                    .padding(.horizontal)
-
                     Text("🗒")
                         .font(.system(size: 60))
-                        .padding(.top, 20)
+                        .padding(.top, 60)
 
                     Text("Загрузите выписку")
                         .font(.title2.bold())
                         .foregroundColor(.white)
 
-                    Text("Сделайте выписку из нужных Вам банков по карте, на которой хранятся Ваши средства")
+                    Text("⏳ Мы просим Вас загрузить выписку за весь период пользования картой — с самого первого дня и до текущей даты")
                         .font(.body)
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
@@ -63,10 +47,10 @@ struct BankStatementUploadView: View {
                     }
 
                     LazyVGrid(columns: [GridItem(), GridItem()], spacing: 20) {
-                        ForEach(selectedBanks.sorted(by: { $0.key < $1.key }), id: \.key) { bank, isSelected in
+                        ForEach(["Tinkoff", "Sber", "Alfa", "VTB"], id: \.self) { bank in
                             ZStack(alignment: .topTrailing) {
                                 Button(action: {
-                                    simulatePDFSelection(for: bank)
+                                    showingDocumentPickerForBank = BankWrapper(bankName: bank)
                                 }) {
                                     Image(bankIconName(for: bank))
                                         .resizable()
@@ -74,14 +58,12 @@ struct BankStatementUploadView: View {
                                         .cornerRadius(14)
                                 }
 
-                                Image(systemName: isSelected ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                    .foregroundColor(isSelected ? .green : .red)
+                                Image(systemName: selectedFiles[bank] != nil ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundColor(selectedFiles[bank] != nil ? .green : .red)
                                     .offset(x: 6, y: -6)
                             }
                         }
                     }
-
-                    Spacer()
 
                     NavigationLink(
                         destination: TransactionPreviewView(transactions: transactionStore.transactions),
@@ -91,28 +73,36 @@ struct BankStatementUploadView: View {
                     }
 
                     Button(action: {
-                        if selectedBanks.values.contains(true) {
-                            if let url = Bundle.main.url(forResource: "spravka_o_dvizhenii_denegnyh_sredstv", withExtension: "pdf") {
-                                uploadPDF(fileURL: url) { result in
-                                    DispatchQueue.main.async {
-                                        switch result {
-                                        case .success(let transactions):
-                                            transactionStore.transactions = transactions
-                                            navigateToPreview = true
-                                        case .failure(let error):
-                                            print("Ошибка загрузки PDF: \(error)")
-                                        }
+                        if selectedFiles.isEmpty {
+                            showAlert = true
+                            return
+                        }
+
+                        var completed = 0
+                        let total = selectedFiles.count
+                        var aggregated: [Transaction] = []
+
+                        for (bank, fileURL) in selectedFiles {
+                            uploadPDF(fileURL: fileURL, bank: bank) { result in
+                                DispatchQueue.main.async {
+                                    completed += 1
+                                    switch result {
+                                    case .success(let transactions):
+                                        aggregated += transactions
+                                    case .failure(let error):
+                                        print("Ошибка загрузки PDF для \(bank): \(error)")
+                                    }
+
+                                    if completed == total {
+                                        transactionStore.transactions = aggregated
+                                        hasUploadedStatement = true
+                                        hasOnboarded = true // ✅ ВОТ ЭТА СТРОКА
+                                        navigateToPreview = true
                                     }
                                 }
-                            } else {
-                                print("PDF-файл не найден")
                             }
-
-                        } else {
-                            showAlert = true
                         }
-                    })
- {
+                    }) {
                         Text("Далее →")
                             .font(.headline)
                             .foregroundColor(.black)
@@ -129,39 +119,42 @@ struct BankStatementUploadView: View {
                             dismissButton: .default(Text("OK"))
                         )
                     }
+
+                    Spacer(minLength: 40)
                 }
-                .padding(.top)
-            }
-            .sheet(item: $showingDocumentPickerForBank) { wrapper in
-                DocumentPicker { url in
-                    if url != nil {
-                        selectedBanks[wrapper.bankName] = true
-                    }
-                    showingDocumentPickerForBank = nil
-                }
+                .padding(.horizontal)
             }
         }
+        .sheet(item: $showingDocumentPickerForBank) { wrapper in
+            DocumentPicker { url in
+                if let url {
+                    selectedFiles[wrapper.bankName] = url
+                }
+                showingDocumentPickerForBank = nil
+            }
+        }
+        .navigationTitle(" ")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
-
-    func uploadPDF(fileURL: URL, completion: @escaping (Result<[Transaction], Error>) -> Void) {
+    func uploadPDF(fileURL: URL, bank: String, completion: @escaping (Result<[Transaction], Error>) -> Void) {
         let boundary = UUID().uuidString
-        var request = URLRequest(url: URL(string: "http://127.0.0.1:8000/transactions/upload")!)
+        var request = URLRequest(url: URL(string: "http://169.254.218.217:8000/transactions/upload")!)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        
-        // Если есть токен, передаем его
+
         if let accessToken = KeychainHelper.shared.readAccessToken() {
             request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         }
 
         var data = Data()
-
-        // Добавляем файл
         let filename = fileURL.lastPathComponent
         let mimeType = "application/pdf"
         let fileData = try? Data(contentsOf: fileURL)
 
+        data.append("--\(boundary)\r\n".data(using: .utf8)!)
+        data.append("Content-Disposition: form-data; name=\"bank\"\r\n\r\n".data(using: .utf8)!)
+        data.append("\(bank)\r\n".data(using: .utf8)!)
         data.append("--\(boundary)\r\n".data(using: .utf8)!)
         data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
         data.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
@@ -179,13 +172,17 @@ struct BankStatementUploadView: View {
                 return
             }
 
+            if let string = String(data: responseData, encoding: .utf8) {
+                print("📦 Ответ от сервера:\n\(string)")
+            }
+
             do {
                 let decoded = try JSONDecoder().decode(UploadResponse.self, from: responseData)
                 let transactions = decoded.transactions.map { tx in
                     Transaction(
-                        id: tx.id,                     // <--- обязательно UUID
+                        id: tx.id,
                         date: tx.date,
-                        time: tx.time,                   // <--- обязательно time
+                        time: tx.time,
                         amount: tx.amount,
                         isIncome: tx.isIncome,
                         description: tx.description,
@@ -194,23 +191,11 @@ struct BankStatementUploadView: View {
                     )
                 }
                 completion(.success(transactions))
-
+                UserDefaults.standard.set(true, forKey: "hasOnboarded")
             } catch {
                 completion(.failure(error))
             }
         }.resume()
-    }
-
-
-    
-    private func simulatePDFSelection(for bank: String) {
-        if let path = Bundle.main.path(forResource: "spravka_o_dvizhenii_denegnyh_sredstv", ofType: "pdf") {
-            let url = URL(fileURLWithPath: path)
-            print("Загружен PDF из бандла: \(url)")
-            selectedBanks[bank] = true
-        } else {
-            print("Файл не найден в бандле.")
-        }
     }
 
     private func bankIconName(for bank: String) -> String {

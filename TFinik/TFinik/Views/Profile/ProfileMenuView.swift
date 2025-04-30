@@ -2,50 +2,50 @@ import SwiftUI
 
 struct ProfileMenuView: View {
     @AppStorage("selectedTab") private var selectedTab: String = "analytics"
+    @State private var isShowingBankUploadView = false
 
     var body: some View {
-        ZStack {
-            BackgroundView()
+        NavigationStack {
+            ZStack {
+                BackgroundView()
 
-            VStack {
-                // Заголовок экрана с иконкой
                 VStack {
-                    HStack {
-                        Text("👦🏻")
-                            .font(.system(size: 32))
-                        Text("Профиль")
-                            .font(.title2.bold())
-                            .foregroundColor(.white)
+                    VStack {
+                        HStack {
+                            Text("👦🏻")
+                                .font(.system(size: 32))
+                            Text("Профиль")
+                                .font(.title2.bold())
+                                .foregroundColor(.white)
+                        }
+                        .padding(.top, 150)
                     }
-                    .padding(.top, 150) // Уменьшаем верхний отступ, чтобы поднять заголовок
-                }
 
-                // Список кнопок
-                VStack(spacing: 16) {
-                    AnalyticsButton(title: "Загрузить выписки", icon: "🎯", action: {
-                        // Действие для финансовых целей
-                    })
-                    AnalyticsButton(title: "Советы по финансам", icon: "🔥", action: {
-                        // Действие для списка транзакций
-                    })
-                    AnalyticsButton(title: "Финансовая история", icon: "📃", action: {
-                        // Действие для графика расходов
-                    })
-                    AnalyticsButton(title: "Портрет месяца", icon: "😁", action: {
-                        // Действие для прогноза расходов
-                    })
-                }
-                .padding(.horizontal, 20)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 24) // Уменьшаем отступ сверху для кнопок
+                    VStack(spacing: 16) {
+                        // Заменяем здесь действие
+                        AnalyticsButton(title: "Загрузить выписки", icon: "🎯", action: {
+                            isShowingBankUploadView = true
+                        })
+                        AnalyticsButton(title: "Советы по финансам", icon: "🔥", action: {})
+                        AnalyticsButton(title: "Финансовая история", icon: "📃", action: {})
+                        AnalyticsButton(title: "Портрет месяца", icon: "😁", action: {})
+                    }
+                    .padding(.horizontal, 20)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 24)
 
-                Spacer() // Для того, чтобы кнопки не расползались по экрану
+                    Spacer()
+                }
+                .padding(.bottom, 140)
             }
-            .padding(.bottom, 140) // Убираем лишний отступ, чтобы нижняя панель не съезжала
+            .ignoresSafeArea()
+            .navigationDestination(isPresented: $isShowingBankUploadView) {
+                BankUploadView()
+            }
         }
-        .ignoresSafeArea()
     }
 }
+
 
 struct ProfileButton: View {
     let title: String

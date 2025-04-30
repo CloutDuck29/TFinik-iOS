@@ -9,24 +9,24 @@ struct TFinikApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if hasOnboarded {
-                if hasUploadedStatement {
-                    NavigationStack {
-                        MainBabView()
-                            .environmentObject(auth)
-                            .environmentObject(transactionStore)
-                    }
+            NavigationStack {
+                if !auth.isLoggedIn {
+                    ContentView(hasOnboarded: $hasOnboarded)
+                        .environmentObject(auth)
+                        .environmentObject(transactionStore)
+                } else if !hasOnboarded {
+                    OnboardingPagerView(hasOnboarded: $hasOnboarded)
+                        .environmentObject(auth)
+                        .environmentObject(transactionStore)
+                } else if !hasUploadedStatement {
+                    BankStatementUploadView()
+                        .environmentObject(auth)
+                        .environmentObject(transactionStore)
                 } else {
-                    NavigationStack {
-                        BankStatementUploadView(hasOnboarded: $hasOnboarded)
-                            .environmentObject(auth)
-                            .environmentObject(transactionStore)
-                    }
+                    MainBabView()
+                        .environmentObject(auth)
+                        .environmentObject(transactionStore)
                 }
-            } else {
-                ContentView(hasOnboarded: $hasOnboarded)
-                    .environmentObject(auth)
-                    .environmentObject(transactionStore)
             }
         }
     }

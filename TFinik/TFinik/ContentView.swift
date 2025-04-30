@@ -14,7 +14,7 @@ struct ContentView: View {
             } else if !hasShownWelcome {
                 WelcomeView(hasShownWelcome: $hasShownWelcome)
             } else {
-                BankStatementUploadView(hasOnboarded: $hasOnboarded)
+                BankStatementUploadView()
             }
         }
     }

@@ -27,6 +27,16 @@ struct MainBabView: View {
                         .environmentObject(transactionStore)
                 }
 
+                Button("Выйти") {
+                    KeychainHelper.shared.clear()
+                    TokenStorage.shared.accessToken = nil
+                    TokenStorage.shared.refreshToken = nil
+                    UserDefaults.standard.set(false, forKey: "hasOnboarded")
+                    UserDefaults.standard.set(false, forKey: "hasUploadedStatement")
+                    // Перезапустить в ContentView — например, переключить isLoggedIn
+                    auth.isLoggedIn = false
+                }
+
                 VStack {
                     Spacer()
                     CustomTabBar(selectedTab: $selectedTab)

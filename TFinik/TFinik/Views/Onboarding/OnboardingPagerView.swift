@@ -55,7 +55,7 @@ struct OnboardingPagerView: View {
                 .padding(.bottom, 30)
 
                 NavigationLink(
-                    destination: BankStatementUploadView(hasOnboarded: $hasOnboarded)
+                    destination: BankStatementUploadView()
                         .environmentObject(TransactionStore()),
                     isActive: $navigateToUpload
                 ) {

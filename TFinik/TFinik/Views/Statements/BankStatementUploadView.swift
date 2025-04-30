@@ -1,5 +1,4 @@
 import SwiftUI
-import Foundation
 import UniformTypeIdentifiers
 
 struct BankWrapper: Identifiable {
@@ -12,8 +11,9 @@ struct BankStatementUploadView: View {
     @State private var selectedFiles: [String: URL] = [:]
     @State private var showingDocumentPickerForBank: BankWrapper? = nil
     @State private var showAlert = false
-    @State private var navigateToPreview = false
-    @Binding var hasOnboarded: Bool
+    @State private var showPreview = false
+
+    @AppStorage("hasOnboarded") private var hasOnboarded = false
     @AppStorage("hasUploadedStatement") private var hasUploadedStatement = false
 
     var body: some View {
@@ -49,9 +49,9 @@ struct BankStatementUploadView: View {
                     LazyVGrid(columns: [GridItem(), GridItem()], spacing: 20) {
                         ForEach(["Tinkoff", "Sber", "Alfa", "VTB"], id: \.self) { bank in
                             ZStack(alignment: .topTrailing) {
-                                Button(action: {
+                                Button {
                                     showingDocumentPickerForBank = BankWrapper(bankName: bank)
-                                }) {
+                                } label: {
                                     Image(bankIconName(for: bank))
                                         .resizable()
                                         .frame(width: 64, height: 64)
@@ -65,65 +65,69 @@ struct BankStatementUploadView: View {
                         }
                     }
 
-                    NavigationLink(
-                        destination: TransactionPreviewView(transactions: transactionStore.transactions),
-                        isActive: $navigateToPreview
-                    ) {
-                        EmptyView()
-                    }
-
-                    Button(action: {
+                    Button("Далее →") {
                         if selectedFiles.isEmpty {
                             showAlert = true
                             return
                         }
 
+                        transactionStore.clear() // очищаем старые транзакции до начала
                         var completed = 0
                         let total = selectedFiles.count
-                        var aggregated: [Transaction] = []
+                        var allTransactions: [Transaction] = []
 
                         for (bank, fileURL) in selectedFiles {
                             uploadPDF(fileURL: fileURL, bank: bank) { result in
                                 DispatchQueue.main.async {
                                     completed += 1
                                     switch result {
-                                    case .success(let transactions):
-                                        aggregated += transactions
+                                    case .success(let txs):
+                                        allTransactions.append(contentsOf: txs)
                                     case .failure(let error):
-                                        print("Ошибка загрузки PDF для \(bank): \(error)")
+                                        print("❌ Ошибка при загрузке \(bank): \(error)")
                                     }
 
                                     if completed == total {
-                                        transactionStore.transactions = aggregated
-                                        hasUploadedStatement = true
-                                        hasOnboarded = true // ✅ ВОТ ЭТА СТРОКА
-                                        navigateToPreview = true
+                                        transactionStore.transactions = allTransactions
+                                        if !allTransactions.isEmpty {
+                                            showPreview = true
+                                        } else {
+                                            print("⚠️ Выписка загружена, но транзакции пусты")
+                                        }
                                     }
                                 }
                             }
                         }
-                    }) {
-                        Text("Далее →")
-                            .font(.headline)
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .padding(.horizontal)
                     }
-                    .alert(isPresented: $showAlert) {
-                        Alert(
-                            title: Text("Загрузка не завершена"),
-                            message: Text("Пожалуйста, загрузите хотя бы одну выписку, прежде чем продолжить."),
-                            dismissButton: .default(Text("OK"))
-                        )
-                    }
+                    .font(.headline)
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .padding(.horizontal)
 
                     Spacer(minLength: 40)
                 }
                 .padding(.horizontal)
             }
+
+            NavigationLink(
+                destination: TransactionPreviewView()
+                    .environmentObject(transactionStore),
+                isActive: $showPreview
+            ) {
+                EmptyView()
+            }
+
+
+        }
+        .alert(isPresented: $showAlert) {
+            Alert(
+                title: Text("Загрузка не завершена"),
+                message: Text("Пожалуйста, загрузите хотя бы одну выписку, прежде чем продолжить."),
+                dismissButton: .default(Text("OK"))
+            )
         }
         .sheet(item: $showingDocumentPickerForBank) { wrapper in
             DocumentPicker { url in
@@ -139,13 +143,15 @@ struct BankStatementUploadView: View {
 
     func uploadPDF(fileURL: URL, bank: String, completion: @escaping (Result<[Transaction], Error>) -> Void) {
         let boundary = UUID().uuidString
+        guard let accessToken = KeychainHelper.shared.readAccessToken() else {
+            completion(.failure(NSError(domain: "Token not found", code: 401)))
+            return
+        }
+
         var request = URLRequest(url: URL(string: "http://169.254.218.217:8000/transactions/upload")!)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-
-        if let accessToken = KeychainHelper.shared.readAccessToken() {
-            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        }
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
         var data = Data()
         let filename = fileURL.lastPathComponent
@@ -172,10 +178,6 @@ struct BankStatementUploadView: View {
                 return
             }
 
-            if let string = String(data: responseData, encoding: .utf8) {
-                print("📦 Ответ от сервера:\n\(string)")
-            }
-
             do {
                 let decoded = try JSONDecoder().decode(UploadResponse.self, from: responseData)
                 let transactions = decoded.transactions.map { tx in
@@ -191,8 +193,8 @@ struct BankStatementUploadView: View {
                     )
                 }
                 completion(.success(transactions))
-                UserDefaults.standard.set(true, forKey: "hasOnboarded")
             } catch {
+                print("❌ Ошибка декодирования JSON: \(error)")
                 completion(.failure(error))
             }
         }.resume()

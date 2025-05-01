@@ -104,7 +104,7 @@ struct BankUploadView: View {
 
         print("✅ Найден токен: \(token)")
 
-        var request = URLRequest(url: URL(string: "http://169.254.218.217:8000/statements")!)
+        var request = URLRequest(url: URL(string: "http://169.254.202.90:8000/statements")!)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         URLSession.shared.dataTask(with: request) { data, response, error in

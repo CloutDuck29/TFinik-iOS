@@ -127,7 +127,7 @@ struct TransactionPreviewView: View {
             return
         }
 
-        guard let url = URL(string: "http://169.254.218.217:8000/transactions/\(transactionID)/category") else {
+        guard let url = URL(string: "http://169.254.202.90:8000/transactions/\(transactionID)") else {
             print("❌ Invalid URL")
             return
         }
@@ -138,8 +138,16 @@ struct TransactionPreviewView: View {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         let body = ["category": newCategory]
-        request.httpBody = try? JSONEncoder().encode(body)
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
-        URLSession.shared.dataTask(with: request).resume()
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let httpResponse = response as? HTTPURLResponse {
+                print("🔁 PATCH Response: \(httpResponse.statusCode)")
+            }
+            if let error = error {
+                print("❌ PATCH Error: \(error.localizedDescription)")
+            }
+        }.resume()
     }
+
 }

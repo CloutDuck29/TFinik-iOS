@@ -80,7 +80,7 @@ struct LoginView: View {
     
     // MARK: - Получение токена
     func fetchAndStoreToken(email: String, password: String) async -> Bool {
-        guard let url = URL(string: "http://169.254.218.217:8000/auth/login") else { return false }
+        guard let url = URL(string: "http://169.254.202.90:8000/auth/login") else { return false }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -127,7 +127,7 @@ struct LoginView: View {
         }
 
         do {
-            var request = URLRequest(url: URL(string: "http://169.254.218.217:8000/transactions/upload")!)
+            var request = URLRequest(url: URL(string: "http://169.254.202.90:8000/transactions/upload")!)
             request.httpMethod = "POST"
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 

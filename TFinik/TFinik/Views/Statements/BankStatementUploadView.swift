@@ -148,7 +148,7 @@ struct BankStatementUploadView: View {
             return
         }
 
-        var request = URLRequest(url: URL(string: "http://169.254.218.217:8000/transactions/upload")!)
+        var request = URLRequest(url: URL(string: "http://169.254.202.90:8000/transactions/upload")!)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
@@ -181,6 +181,7 @@ struct BankStatementUploadView: View {
             do {
                 let decoded = try JSONDecoder().decode(UploadResponse.self, from: responseData)
                 let transactions = decoded.transactions.map { tx in
+                    
                     Transaction(
                         id: tx.id,
                         date: tx.date,

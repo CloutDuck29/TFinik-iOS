@@ -16,8 +16,8 @@ struct AnalyticsResponse: Codable {
     let categories: [CategoryData]
 
     struct Period: Codable {
-        let start: String
-        let end: String
+        let start: String?
+        let end: String?
     }
 
     struct CategoryData: Codable {
@@ -34,6 +34,7 @@ struct ExpensesChartView: View {
     @State private var loadedPeriodEnd: String = ""
     @State private var loadedCategories: [ExpenseCategory] = []
     @State private var isUnauthorized = false
+    @State private var noRecentData = false
 
     var body: some View {
         ZStack {
@@ -42,6 +43,20 @@ struct ExpensesChartView: View {
             if isLoading {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
+            } else if noRecentData {
+                VStack(spacing: 16) {
+                    Text("⚠️")
+                        .font(.system(size: 48))
+                    Text("Ваши выписки слишком старые")
+                        .font(.title2.bold())
+                        .foregroundColor(.white)
+                    Text("Пожалуйста, загрузите новые выписки за последние 30 дней.")
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.gray)
+                        .padding(.horizontal)
+                }
+                .frame(maxHeight: .infinity, alignment: .top)
+                .padding(.top, 300)
             } else {
                 VStack(spacing: 24) {
                     HStack {
@@ -51,15 +66,14 @@ struct ExpensesChartView: View {
                             .font(.title2.bold())
                             .foregroundColor(.white)
                     }
-                    .padding(.top, 125) // Уменьшаем верхний отступ, чтобы поднять заголовок
-                
+                    .padding(.top, 125)
 
                     PieChartView(categories: loadedCategories)
                         .frame(height: 250)
                         .padding(.top, 8)
 
                     VStack(spacing: 4) {
-                        Text("Траты за период (\(loadedPeriodStart) — \(loadedPeriodEnd))")
+                        Text("Траты за период (\(loadedPeriodStart.isEmpty ? "—" : loadedPeriodStart) — \(loadedPeriodEnd.isEmpty ? "—" : loadedPeriodEnd))")
                             .font(.subheadline)
                             .foregroundColor(.gray)
                         Text("\(Int(loadedTotalSpent))₽")
@@ -89,6 +103,7 @@ struct ExpensesChartView: View {
                 }
                 .padding()
             }
+
         }
         .fullScreenCover(isPresented: $isUnauthorized) {
             LoginView()
@@ -105,7 +120,7 @@ struct ExpensesChartView: View {
         if TokenStorage.shared.accessToken == nil {
             TokenStorage.shared.accessToken = KeychainHelper.shared.readAccessToken()
         }
-        guard let url = URL(string: "http://169.254.202.90:8000/analytics/categories"),
+        guard let url = URL(string: "http://169.254.223.148:8000/analytics/categories"),
               let token = TokenStorage.shared.accessToken else {
             print("❌ URL или токен не найдены")
             return
@@ -150,8 +165,8 @@ struct ExpensesChartView: View {
 
                 DispatchQueue.main.async {
                     self.loadedTotalSpent = decoded.totalSpent
-                    self.loadedPeriodStart = decoded.period.start
-                    self.loadedPeriodEnd = decoded.period.end
+                    self.loadedPeriodStart = decoded.period.start ?? ""
+                    self.loadedPeriodEnd = decoded.period.end ?? ""
                     self.loadedCategories = decoded.categories.map { cat in
                         ExpenseCategory(
                             name: cat.category,
@@ -159,8 +174,10 @@ struct ExpensesChartView: View {
                             color: color(for: cat.category)
                         )
                     }
+                    self.noRecentData = decoded.categories.isEmpty
                     self.isLoading = false
                 }
+
             } catch {
                 DispatchQueue.main.async {
                     print("❌ Ошибка декодирования: \(error.localizedDescription)")

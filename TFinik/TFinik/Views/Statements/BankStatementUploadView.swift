@@ -148,7 +148,7 @@ struct BankStatementUploadView: View {
             return
         }
 
-        var request = URLRequest(url: URL(string: "http://169.254.202.90:8000/transactions/upload")!)
+        var request = URLRequest(url: URL(string: "http://169.254.223.148:8000/transactions/upload")!)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")

@@ -27,7 +27,7 @@
 	<key>UISupportsDocumentBrowser</key>
 	<true/>
 
-	<!-- 🗂️ (опционально) Разрешаем доступ к файлам и iCloud -->
+	<!-- 🗂️ Разрешаем доступ к файлам и iCloud -->
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
 	<key>UIFileSharingEnabled</key>

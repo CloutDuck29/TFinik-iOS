@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import Foundation
 
 struct Statement: Identifiable, Decodable {
     var id: Int
@@ -34,11 +35,11 @@ struct BankUploadEntry: Identifiable {
 }
 
 struct BankUploadView: View {
-    @EnvironmentObject var auth: AuthService // ✅ правильно
+    @EnvironmentObject var auth: AuthService
     @State private var entries: [BankUploadEntry] = []
     @State private var selectedBank: String?
     @State private var isFileImporterPresented = false
-    
+    @State private var showDuplicateAlert = false
 
     var body: some View {
         ZStack {
@@ -78,38 +79,106 @@ struct BankUploadView: View {
                 switch result {
                 case .success(let urls):
                     if let url = urls.first, let bank = selectedBank {
-                        print("Загружен файл для банка: \(bank), путь: \(url.path)")
-                        // TODO: отправка файла на сервер
+                        uploadPDF(fileURL: url, bank: bank)
                     }
                 case .failure(let error):
                     print("Ошибка загрузки файла: \(error.localizedDescription)")
                 }
             }
         }
+        .alert("Такая выписка уже загружена", isPresented: $showDuplicateAlert) {
+            Button("Ок", role: .cancel) { }
+        }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                print("👀 auth.accessToken = \(auth.accessToken ?? "nil")") // <-- вот сюда смотри
+                print("\u{1F440} auth.accessToken = \(auth.accessToken ?? "nil")")
                 fetchStatements()
             }
         }
+    }
 
+    func uploadPDF(fileURL: URL, bank: String) {
+        guard let token = KeychainHelper.shared.readAccessToken() else {
+            print("\u{274C} Токен не найден")
+            return
+        }
+
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".pdf")
+
+        guard fileURL.startAccessingSecurityScopedResource() else {
+            print("\u{274C} Не удалось получить доступ к файлу")
+            return
+        }
+        defer { fileURL.stopAccessingSecurityScopedResource() }
+
+        do {
+            try FileManager.default.copyItem(at: fileURL, to: tempURL)
+            print("✅ Файл скопирован во временное место: \(tempURL.path)")
+        } catch {
+            print("\u{274C} Ошибка при копировании файла: \(error.localizedDescription)")
+            return
+        }
+
+        guard let data = try? Data(contentsOf: tempURL) else {
+            print("\u{274C} Не удалось прочитать данные из временного файла")
+            return
+        }
+
+        let filename = tempURL.lastPathComponent
+        let mimetype = "application/pdf"
+
+        var request = URLRequest(url: URL(string: "http://169.254.223.148:8000/transactions/upload")!)
+        let boundary = UUID().uuidString
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"bank\"\r\n\r\n".data(using: .utf8)!)
+        body.append("\(bank)\r\n".data(using: .utf8)!)
+
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(mimetype)\r\n\r\n".data(using: .utf8)!)
+        body.append(data)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+
+        URLSession.shared.uploadTask(with: request, from: body) { data, response, error in
+            if let error = error {
+                print("\u{274C} Ошибка загрузки: \(error.localizedDescription)")
+                return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                print("\u{1F4E4} Ответ: \(httpResponse.statusCode)")
+                if httpResponse.statusCode == 400 {
+                    DispatchQueue.main.async {
+                        showDuplicateAlert = true
+                    }
+                    return
+                }
+            }
+
+            DispatchQueue.main.async {
+                fetchStatements()
+            }
+        }.resume()
     }
 
     func fetchStatements() {
         guard let token = KeychainHelper.shared.readAccessToken() else {
-            print("❌ Токен не найден в Keychain")
+            print("\u{274C} Токен не найден в Keychain")
             return
         }
 
-
-        print("✅ Найден токен: \(token)")
-
-        var request = URLRequest(url: URL(string: "http://169.254.202.90:8000/statements")!)
+        var request = URLRequest(url: URL(string: "http://169.254.223.148:8000/statements")!)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("❌ Ошибка запроса: \(error.localizedDescription)")
+                print("\u{274C} Ошибка запроса: \(error.localizedDescription)")
                 return
             }
             if let httpResponse = response as? HTTPURLResponse {
@@ -117,7 +186,7 @@ struct BankUploadView: View {
             }
 
             guard let data = data else {
-                print("❌ Нет данных")
+                print("\u{274C} Нет данных")
                 return
             }
 
@@ -128,7 +197,7 @@ struct BankUploadView: View {
                     self.entries = processStatements(decoded)
                 }
             } catch {
-                print("❌ Ошибка декодирования: \(error)")
+                print("\u{274C} Ошибка декодирования: \(error)")
             }
         }.resume()
     }

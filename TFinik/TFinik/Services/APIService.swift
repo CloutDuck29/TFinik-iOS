@@ -6,7 +6,7 @@ func updateTransactionCategory(transactionID: Int, newCategory: String, completi
         return
     }
     
-    guard let url = URL(string: "http://169.254.202.90:8000/transactions/\(transactionID)") else {
+    guard let url = URL(string: "http://169.254.223.148:8000/transactions/\(transactionID)") else {
         completion(.failure(NSError(domain: "", code: 400, userInfo: [NSLocalizedDescriptionKey: "Некорректный URL"])))
         return
     }

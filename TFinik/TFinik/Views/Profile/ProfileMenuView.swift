@@ -20,7 +20,7 @@ struct ProfileMenuView: View {
                                 .font(.title2.bold())
                                 .foregroundColor(.white)
                         }
-                        .padding(.top, 150)
+                        .padding(.top, 125)
                     }
 
                     VStack(spacing: 16) {

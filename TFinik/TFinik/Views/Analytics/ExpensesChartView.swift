@@ -66,7 +66,7 @@ struct ExpensesChartView: View {
                             .font(.title2.bold())
                             .foregroundColor(.white)
                     }
-                    .padding(.top, 125)
+                    .padding(.top, 110)
 
                     PieChartView(categories: loadedCategories)
                         .frame(height: 250)
@@ -120,7 +120,7 @@ struct ExpensesChartView: View {
         if TokenStorage.shared.accessToken == nil {
             TokenStorage.shared.accessToken = KeychainHelper.shared.readAccessToken()
         }
-        guard let url = URL(string: "http://169.254.223.148:8000/analytics/categories"),
+        guard let url = URL(string: "http://10.255.255.239:8000/analytics/categories"),
               let token = TokenStorage.shared.accessToken else {
             print("❌ URL или токен не найдены")
             return

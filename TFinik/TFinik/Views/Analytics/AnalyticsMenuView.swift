@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AnalyticsMenuView: View {
     @AppStorage("selectedTab") private var selectedTab: String = "analytics"
+    @State private var isShowingExpensesGraphic = false
 
     var body: some View {
         ZStack {
@@ -17,7 +18,7 @@ struct AnalyticsMenuView: View {
                             .font(.title2.bold())
                             .foregroundColor(.white)
                     }
-                    .padding(.top, 150) // Уменьшаем верхний отступ, чтобы поднять заголовок
+                    .padding(.top, 125) // Уменьшаем верхний отступ, чтобы поднять заголовок
                 }
 
                 // Список кнопок
@@ -29,7 +30,7 @@ struct AnalyticsMenuView: View {
                         // Действие для списка транзакций
                     })
                     AnalyticsButton(title: "График расходов", icon: "💰", action: {
-                        // Действие для графика расходов
+                        isShowingExpensesGraphic = true
                     })
                     AnalyticsButton(title: "Прогноз расходов", icon: "🛠", action: {
                         // Действие для прогноза расходов
@@ -47,6 +48,9 @@ struct AnalyticsMenuView: View {
             .padding(.bottom, 140) // Убираем лишний отступ, чтобы нижняя панель не съезжала
         }
         .ignoresSafeArea()
+        .navigationDestination(isPresented: $isShowingExpensesGraphic) {
+            ExpensesGraphView()
+        }
     }
 }
 

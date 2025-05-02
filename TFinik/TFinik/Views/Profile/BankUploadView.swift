@@ -127,7 +127,7 @@ struct BankUploadView: View {
         let filename = tempURL.lastPathComponent
         let mimetype = "application/pdf"
 
-        var request = URLRequest(url: URL(string: "http://169.254.223.148:8000/transactions/upload")!)
+        var request = URLRequest(url: URL(string: "http://10.255.255.239:8000/transactions/upload")!)
         let boundary = UUID().uuidString
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -173,7 +173,7 @@ struct BankUploadView: View {
             return
         }
 
-        var request = URLRequest(url: URL(string: "http://169.254.223.148:8000/statements")!)
+        var request = URLRequest(url: URL(string: "http://10.255.255.239:8000/statements")!)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         URLSession.shared.dataTask(with: request) { data, response, error in

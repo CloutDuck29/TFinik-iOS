@@ -1,7 +1,7 @@
 import SwiftUI
 import Charts
 
-struct ExpenseEntry: Identifiable, Decodable, Equatable {
+struct IncomeEntry: Identifiable, Decodable, Equatable {
     let id = UUID()
     let month: String
     let category: String
@@ -9,9 +9,9 @@ struct ExpenseEntry: Identifiable, Decodable, Equatable {
     let description: String?
 }
 
-struct ExpensesGraphView: View {
+struct IncomeGraphView: View {
     @Environment(\.dismiss) var dismiss
-    @State private var data: [ExpenseEntry] = []
+    @State private var data: [IncomeEntry] = []
     @State private var isLoading = true
 
     var body: some View {
@@ -22,13 +22,13 @@ struct ExpensesGraphView: View {
                 HStack {
                     Text("📈")
                         .font(.system(size: 32))
-                    Text("График расходов")
+                    Text("График доходов")
                         .font(.title2.bold())
                         .foregroundColor(.white)
                 }
                 .padding(.top, 125)
 
-                Text("Здесь Вы можете увидеть график Ваших расходов")
+                Text("Здесь Вы можете увидеть график Ваших доходов")
                     .font(.subheadline)
                     .foregroundColor(.gray)
 
@@ -39,13 +39,11 @@ struct ExpensesGraphView: View {
                         .padding(.top, 60)
                 } else {
                     Chart(data) {
-                        LineMark(
+                        BarMark(
                             x: .value("Месяц", $0.month),
                             y: .value("Сумма", $0.amount)
                         )
                         .foregroundStyle(by: .value("Категория", $0.category))
-                        .symbol(by: .value("Категория", $0.category))
-                        .interpolationMethod(.catmullRom)
                     }
                     .frame(height: 250)
                     .padding()
@@ -59,35 +57,38 @@ struct ExpensesGraphView: View {
                     .animation(.easeInOut, value: data)
                 }
 
-                if !otherDescriptions.isEmpty {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Что попало в категорию \"Другие\"")
-                                .font(.subheadline.bold())
-                                .foregroundColor(.white)
+                if !incomeDescriptions.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Описание доходов")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.white)
 
-                            ScrollView {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    ForEach(otherDescriptions, id: \.self) { desc in
-                                        Text("• \(desc)")
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
-                                            .lineLimit(2)
-                                    }
+                        ScrollView(.vertical, showsIndicators: true) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(Array(incomeDescriptions.enumerated()), id: \.offset) { index, desc in
+                                    Text("• \(desc)")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                        .lineLimit(2)
                                 }
                             }
-                            .frame(height: 150)
+                            .padding(.trailing, 8) // 👈 Уменьшенный правый отступ
+                            .padding(.leading, 4)  // 👈 Уменьшенный левый отступ
                         }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.purple, lineWidth: 1)
-                                .background(Color.black.opacity(0.1).cornerRadius(16))
-                        )
+                        .frame(height: 150)
                     }
+                    .padding(.horizontal, 16) // нормальные внешние боковые отступы блока
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.purple, lineWidth: 1)
+                            .background(Color.black.opacity(0.1).cornerRadius(16))
+                    )
                     .padding(.horizontal)
                 }
+
+
 
                 Spacer()
             }
@@ -99,15 +100,13 @@ struct ExpensesGraphView: View {
         }
     }
 
-    var otherDescriptions: [String] {
-        data.filter { $0.category == "Другие" }
-            .compactMap { $0.description }
-            .uniqued()
+    var incomeDescriptions: [String] {
+        data.compactMap { $0.description }
     }
 
     func fetchGraphData() {
         guard let token = KeychainHelper.shared.readAccessToken(),
-              let url = URL(string: "http://10.255.255.239:8000/analytics/monthly") else {
+              let url = URL(string: "http://10.255.255.239:8000/analytics/income") else {
             return
         }
 
@@ -117,7 +116,7 @@ struct ExpensesGraphView: View {
         URLSession.shared.dataTask(with: request) { responseData, response, error in
             if let data = responseData {
                 do {
-                    let decoded = try JSONDecoder().decode([ExpenseEntry].self, from: data)
+                    let decoded = try JSONDecoder().decode([IncomeEntry].self, from: data)
                     DispatchQueue.main.async {
                         self.data = decoded
                         self.isLoading = false
@@ -130,4 +129,9 @@ struct ExpensesGraphView: View {
     }
 }
 
-
+extension Sequence where Element: Hashable {
+    func uniqued() -> [Element] {
+        var seen = Set<Element>()
+        return filter { seen.insert($0).inserted }
+    }
+}

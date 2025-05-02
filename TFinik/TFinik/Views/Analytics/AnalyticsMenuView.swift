@@ -3,13 +3,14 @@ import SwiftUI
 struct AnalyticsMenuView: View {
     @AppStorage("selectedTab") private var selectedTab: String = "analytics"
     @State private var isShowingExpensesGraphic = false
+    @State private var isShowingIncomeGraphic = false
 
     var body: some View {
         ZStack {
             BackgroundView()
 
             VStack {
-                // Заголовок экрана с иконкой
+                // Заголовок экрана
                 VStack {
                     HStack {
                         Text("📈")
@@ -18,41 +19,45 @@ struct AnalyticsMenuView: View {
                             .font(.title2.bold())
                             .foregroundColor(.white)
                     }
-                    .padding(.top, 125) // Уменьшаем верхний отступ, чтобы поднять заголовок
+                    .padding(.top, 125)
                 }
 
-                // Список кнопок
+                // Кнопки
                 VStack(spacing: 16) {
                     AnalyticsButton(title: "Финансовые цели", icon: "🎯", action: {
-                        // Действие для финансовых целей
+                        // TODO
                     })
                     AnalyticsButton(title: "Список транзакций", icon: "💸", action: {
-                        // Действие для списка транзакций
+                        // TODO
                     })
                     AnalyticsButton(title: "График расходов", icon: "💰", action: {
                         isShowingExpensesGraphic = true
                     })
                     AnalyticsButton(title: "Прогноз расходов", icon: "🛠", action: {
-                        // Действие для прогноза расходов
+                        // TODO
                     })
-                    AnalyticsButton(title: "График заработков", icon: "🤑", action: {
-                        // Действие для графика заработков
+                    AnalyticsButton(title: "График доходов", icon: "🤑", action: {
+                        isShowingIncomeGraphic = true
                     })
                 }
                 .padding(.horizontal, 20)
                 .frame(maxWidth: .infinity)
-                .padding(.top, 24) // Уменьшаем отступ сверху для кнопок
+                .padding(.top, 24)
 
-                Spacer() // Для того, чтобы кнопки не расползались по экрану
+                Spacer()
             }
-            .padding(.bottom, 140) // Убираем лишний отступ, чтобы нижняя панель не съезжала
+            .padding(.bottom, 140)
         }
         .ignoresSafeArea()
         .navigationDestination(isPresented: $isShowingExpensesGraphic) {
             ExpensesGraphView()
         }
+        .navigationDestination(isPresented: $isShowingIncomeGraphic) {
+            IncomeGraphView()
+        }
     }
 }
+
 
 struct AnalyticsButton: View {
     let title: String

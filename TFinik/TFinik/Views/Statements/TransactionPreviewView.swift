@@ -17,7 +17,7 @@ struct TransactionPreviewView: View {
     @AppStorage("hasOnboarded") private var hasOnboarded = false
     @State private var navigateToAnalytics = false
 
-    let categories = ["Кофейни", "Магазины", "Транспорт", "Доставка/Еда", "Развлечения", "Пополнение", "ЖКХ/Коммуналка", "Переводы", "Другие"]
+    let categories = ["Кофейни", "Магазины", "Транспорт", "Доставка", "Развлечения", "Пополнение", "ЖКХ", "Переводы", "Другие"]
 
     var body: some View {
         ZStack {

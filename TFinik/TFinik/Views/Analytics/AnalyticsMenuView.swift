@@ -10,43 +10,40 @@ struct AnalyticsMenuView: View {
             BackgroundView()
 
             VStack {
-                // Заголовок экрана
-                VStack {
-                    HStack {
-                        Text("📈")
-                            .font(.system(size: 32))
-                        Text("Аналитика")
-                            .font(.title2.bold())
-                            .foregroundColor(.white)
+                VStack(spacing: 8) {
+                    Text("📈")
+                        .font(.system(size: 40))
+                    Text("Аналитика")
+                        .font(.title2.bold())
+                        .foregroundColor(.white)
+                }
+                .padding(.top, 125)
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
+                    AnalyticsCard(icon: "🎯", label: "Цели") {
+                        // TODO
                     }
-                    .padding(.top, 125)
+                    AnalyticsCard(icon: "💸", label: "Траты") {
+                        // TODO
+                    }
+                    AnalyticsCard(icon: "💰", label: "Расходы") {
+                        isShowingExpensesGraphic = true
+                    }
+                    AnalyticsCard(icon: "🛠", label: "Прогноз") {
+                        // TODO
+                    }
+                    AnalyticsCard(icon: "🤑", label: "Доходы") {
+                        isShowingIncomeGraphic = true
+                    }
+                    .gridCellColumns(2) // ← добавь это
                 }
 
-                // Кнопки
-                VStack(spacing: 16) {
-                    AnalyticsButton(title: "Финансовые цели", icon: "🎯", action: {
-                        // TODO
-                    })
-                    AnalyticsButton(title: "Список транзакций", icon: "💸", action: {
-                        // TODO
-                    })
-                    AnalyticsButton(title: "График расходов", icon: "💰", action: {
-                        isShowingExpensesGraphic = true
-                    })
-                    AnalyticsButton(title: "Прогноз расходов", icon: "🛠", action: {
-                        // TODO
-                    })
-                    AnalyticsButton(title: "График доходов", icon: "🤑", action: {
-                        isShowingIncomeGraphic = true
-                    })
-                }
+                .padding(.top, 40)
                 .padding(.horizontal, 20)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 24)
 
                 Spacer()
             }
-            .padding(.bottom, 140)
+            .padding(.bottom, 80)
         }
         .ignoresSafeArea()
         .navigationDestination(isPresented: $isShowingExpensesGraphic) {
@@ -54,6 +51,32 @@ struct AnalyticsMenuView: View {
         }
         .navigationDestination(isPresented: $isShowingIncomeGraphic) {
             IncomeGraphView()
+        }
+    }
+}
+
+struct AnalyticsCard: View {
+    let icon: String
+    let label: String
+    let action: () -> Void
+    var fullWidth: Bool = false
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Text(icon)
+                    .font(.system(size: 40))
+                Text(label)
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+            }
+            .frame(maxWidth: .infinity, minHeight: 100)
+            .background(Color.black.opacity(0.3))
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.purple.opacity(0.5), lineWidth: 1)
+            )
         }
     }
 }

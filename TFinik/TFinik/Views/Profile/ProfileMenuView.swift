@@ -2,9 +2,11 @@ import SwiftUI
 
 struct ProfileMenuView: View {
     @AppStorage("selectedTab") private var selectedTab: String = "analytics"
-    @State private var isShowingBankUploadView = false
     @EnvironmentObject var auth: AuthService
-
+    @State private var isShowingBankUploadView = false
+    @State private var isShowingAdviceView = false
+    @State private var isShowingHistoryView = false
+    @State private var isShowingPortraitView = false
 
     var body: some View {
         NavigationStack {
@@ -12,42 +14,80 @@ struct ProfileMenuView: View {
                 BackgroundView()
 
                 VStack {
-                    VStack {
-                        HStack {
-                            Text("👦🏻")
-                                .font(.system(size: 32))
-                            Text("Профиль")
-                                .font(.title2.bold())
-                                .foregroundColor(.white)
-                        }
-                        .padding(.top, 125)
+                    VStack(spacing: 8) {
+                        Text("👦🏻")
+                            .font(.system(size: 40))
+                        Text("Профиль")
+                            .font(.title2.bold())
+                            .foregroundColor(.white)
                     }
+                    .padding(.top, 125)
 
-                    VStack(spacing: 16) {
-                        // Заменяем здесь действие
-                        AnalyticsButton(title: "Загрузить выписки", icon: "🎯", action: {
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
+                        ProfileCard(icon: "🎯", label: "Выписки") {
                             isShowingBankUploadView = true
-                        })
-                        AnalyticsButton(title: "Советы по финансам", icon: "🔥", action: {})
-                        AnalyticsButton(title: "Финансовая история", icon: "📃", action: {})
-                        AnalyticsButton(title: "Портрет месяца", icon: "😁", action: {})
+                        }
+                        ProfileCard(icon: "🔥", label: "Советы") {
+                            isShowingAdviceView = true
+                        }
+                        ProfileCard(icon: "📃", label: "История") {
+                            isShowingHistoryView = true
+                        }
+                        ProfileCard(icon: "😁", label: "Портрет") {
+                            isShowingPortraitView = true
+                        }
                     }
+                    .padding(.top, 40)
                     .padding(.horizontal, 20)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 24)
 
                     Spacer()
                 }
-                .padding(.bottom, 140)
+                .padding(.bottom, 80)
+
+                .navigationDestination(isPresented: $isShowingBankUploadView) {
+                    BankUploadView().environmentObject(auth)
+                }
+                .navigationDestination(isPresented: $isShowingAdviceView) {
+                    FinanceAdviceView()
+                }
+                .navigationDestination(isPresented: $isShowingHistoryView) {
+                    FinanceAdviceView()
+                }
+                .navigationDestination(isPresented: $isShowingPortraitView) {
+                    FinanceAdviceView()
+                }
             }
             .ignoresSafeArea()
-            .navigationDestination(isPresented: $isShowingBankUploadView) {
-                BankUploadView()
-                    .environmentObject(auth)
-            }
         }
     }
 }
+
+struct ProfileCard: View {
+    let icon: String
+    let label: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Text(icon)
+                    .font(.system(size: 40))
+                Text(label)
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+            }
+            .frame(maxWidth: .infinity, minHeight: 100)
+            .background(Color.black.opacity(0.3))
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.purple.opacity(0.5), lineWidth: 1)
+            )
+        }
+    }
+}
+
+
 
 
 struct ProfileButton: View {

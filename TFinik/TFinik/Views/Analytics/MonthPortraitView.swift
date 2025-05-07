@@ -31,9 +31,25 @@ struct MonthPortraitResponse: Decodable {
 class PortraitViewModel: ObservableObject {
     @Published var data: MonthPortraitResponse?
     @Published var isLoading = true
+    @Published var month: Int
+    @Published var year: Int
+
+    init() {
+        let now = Date()
+        let calendar = Calendar.current
+        self.month = calendar.component(.month, from: now)
+        self.year = calendar.component(.year, from: now)
+    }
 
     func loadPortrait(token: String) {
-        guard let url = URL(string: "http://169.254.142.87:8000/portrait") else { return }
+        isLoading = true
+        var components = URLComponents(string: "http://169.254.142.87:8000/portrait")!
+        components.queryItems = [
+            URLQueryItem(name: "month", value: "\(month)"),
+            URLQueryItem(name: "year", value: "\(year)")
+        ]
+        guard let url = components.url else { return }
+
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -58,11 +74,8 @@ class PortraitViewModel: ObservableObject {
                     return
                 }
 
-                // Печатаем тело ответа как строку
                 if let raw = String(data: data, encoding: .utf8) {
                     print("📦 Ответ от сервера:\n\(raw)\n")
-                } else {
-                    print("❓ Не удалось декодировать ответ как строку")
                 }
 
                 do {
@@ -73,14 +86,50 @@ class PortraitViewModel: ObservableObject {
             }
         }.resume()
     }
+
+    func previousMonth(token: String) {
+        if month == 1 {
+            month = 12
+            year -= 1
+        } else {
+            month -= 1
+        }
+        loadPortrait(token: token)
+    }
+
+    func nextMonth(token: String) {
+        if month == 12 {
+            month = 1
+            year += 1
+        } else {
+            month += 1
+        }
+        loadPortrait(token: token)
+    }
 }
 
 
 // MARK: - View
-
 struct MonthPortraitView: View {
     @StateObject private var viewModel = PortraitViewModel()
     @EnvironmentObject var auth: AuthService
+
+    var formattedMonthYear: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "LLLL yyyy"
+
+        var comps = DateComponents()
+        comps.year = viewModel.year
+        comps.month = viewModel.month
+        comps.day = 1
+
+        let calendar = Calendar.current
+        if let date = calendar.date(from: comps) {
+            return formatter.string(from: date).capitalized  // например, "Май 2025"
+        }
+        return "\(viewModel.month).\(viewModel.year)"
+    }
 
     var body: some View {
         ZStack {
@@ -93,6 +142,7 @@ struct MonthPortraitView: View {
             } else if let portrait = viewModel.data?.portrait {
                 ScrollView {
                     VStack(spacing: 24) {
+                        // Заголовок
                         VStack(spacing: 8) {
                             Text("Портрет месяца")
                                 .font(.title2.bold())
@@ -104,6 +154,36 @@ struct MonthPortraitView: View {
                         }
                         .padding(.top, 32)
 
+                        // Переключение месяцев
+                        HStack {
+                            Button(action: {
+                                if let token = auth.accessToken {
+                                    viewModel.previousMonth(token: token)
+                                }
+                            }) {
+                                Image(systemName: "chevron.left")
+                            }
+
+                            Spacer()
+
+                            Text(formattedMonthYear)
+                                .foregroundColor(.white)
+                                .font(.headline)
+
+                            Spacer()
+
+                            Button(action: {
+                                if let token = auth.accessToken {
+                                    viewModel.nextMonth(token: token)
+                                }
+                            }) {
+                                Image(systemName: "chevron.right")
+                            }
+                        }
+                        .foregroundColor(.white)
+                        .font(.title3)
+                        .padding(.horizontal)
+
                         if portrait.status == "no_data" {
                             PortraitCard {
                                 Text(portrait.message ?? "Нет данных для анализа")
@@ -113,10 +193,6 @@ struct MonthPortraitView: View {
                         } else {
                             PortraitCard {
                                 VStack(alignment: .leading, spacing: 12) {
-                                    Text("\(portrait.month ?? "") \(portrait.year ?? 0)")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-
                                     Text(portrait.summary ?? "")
                                         .font(.body)
                                         .foregroundColor(.white)
@@ -164,6 +240,8 @@ struct MonthPortraitView: View {
         }
     }
 }
+
+
 
 // MARK: - Общий стиль карточки
 

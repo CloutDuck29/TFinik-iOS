@@ -247,7 +247,7 @@ struct BankUploadCard: View {
 
             ForEach(entry.years) { chunk in
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("\(chunk.year)")
+                    Text(String(chunk.year))
                         .font(.subheadline.bold())
                         .foregroundColor(.white)
 

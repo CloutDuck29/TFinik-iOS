@@ -54,7 +54,8 @@ struct ProfileMenuView: View {
                     FinanceAdviceView()
                 }
                 .navigationDestination(isPresented: $isShowingPortraitView) {
-                    FinanceAdviceView()
+                    MonthPortraitView()
+                        .environmentObject(auth) // <--- вот это добавь
                 }
             }
             .ignoresSafeArea()

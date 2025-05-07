@@ -107,7 +107,7 @@ struct ExpensesGraphView: View {
 
     func fetchGraphData() {
         guard let token = KeychainHelper.shared.readAccessToken(),
-              let url = URL(string: "http://10.255.255.239:8000/analytics/monthly") else {
+              let url = URL(string: "http://169.254.142.87:8000/analytics/monthly") else {
             return
         }
 

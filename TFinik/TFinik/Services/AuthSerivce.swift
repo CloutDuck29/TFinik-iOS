@@ -105,7 +105,7 @@ final class AuthService: ObservableObject {
             return
         }
 
-        guard let url = URL(string: "http://10.255.255.239:8000/auth/refresh") else {
+        guard let url = URL(string: "http://169.254.142.87:8000/auth/refresh") else {
             completion(false)
             return
         }

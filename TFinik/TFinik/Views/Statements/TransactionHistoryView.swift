@@ -7,6 +7,10 @@ struct TransactionHistoryResponse: Codable {
 struct TransactionHistoryView: View {
     @EnvironmentObject var store: TransactionStore
 
+    @State private var selectedCategory: String? = nil
+    @State private var selectedYearMonth: String? = nil
+    @State private var hasLoaded = false
+
     var body: some View {
         ZStack {
             BackgroundView()
@@ -29,12 +33,38 @@ struct TransactionHistoryView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
 
-                // Фильтры
-                HStack(spacing: 16) {
-                    Label("Дата", image: "")
-                        .labelStyle(EmojiLabelStyle(emoji: "📅"))
-                    Label("Категория", image: "")
-                        .labelStyle(EmojiLabelStyle(emoji: "🗂"))
+                // Фильтры и сброс
+                HStack(spacing: 12) {
+                    Menu {
+                        Button("Все месяцы") { selectedYearMonth = nil }
+                        ForEach(uniqueYearMonths(), id: \.self) { ym in
+                            Button(ym) { selectedYearMonth = ym }
+                        }
+                    } label: {
+                        Label(selectedYearMonth ?? "Месяц", image: "")
+                            .labelStyle(EmojiLabelStyle(emoji: "📅"))
+                    }
+
+                    Menu {
+                        Button("Все категории") { selectedCategory = nil }
+                        ForEach(uniqueCategories(), id: \.self) { category in
+                            Button(category) { selectedCategory = category }
+                        }
+                    } label: {
+                        Label(selectedCategory ?? "Категория", image: "")
+                            .labelStyle(EmojiLabelStyle(emoji: "🗂"))
+                    }
+
+                    Button("↺") {
+                        selectedCategory = nil
+                        selectedYearMonth = nil
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.1))
+                    .cornerRadius(8)
                 }
                 .font(.footnote)
                 .foregroundColor(.gray)
@@ -47,7 +77,7 @@ struct TransactionHistoryView: View {
                     Spacer()
                 } else {
                     // Общая сумма вне скролла
-                    let total = store.transactions.reduce(0) { $0 + $1.amount }
+                    let total = filteredAndSortedTransactions().reduce(0) { $0 + $1.amount }
                     Text(String(format: "%.0f₽", total))
                         .font(.title)
                         .bold()
@@ -58,7 +88,7 @@ struct TransactionHistoryView: View {
                     // Список транзакций
                     ScrollView {
                         LazyVStack(spacing: 12) {
-                            ForEach(sortedTransactions()) { tx in
+                            ForEach(filteredAndSortedTransactions()) { tx in
                                 HStack {
                                     ZStack {
                                         Circle()
@@ -112,22 +142,84 @@ struct TransactionHistoryView: View {
         }
         .ignoresSafeArea()
         .onAppear {
-            store.fetchTransactions()
+            if !hasLoaded {
+                hasLoaded = true
+                store.fetchTransactions()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    if selectedYearMonth == nil {
+                        selectedYearMonth = uniqueYearMonths().first
+                    }
+                }
+            }
         }
     }
 
-    // Сортировка транзакций по убыванию даты
-    func sortedTransactions() -> [Transaction] {
-        store.transactions.sorted {
-            guard let d1 = parseDate($0.date), let d2 = parseDate($1.date) else { return false }
-            return d1 > d2
-        }
+    // Фильтрация и сортировка
+    func filteredAndSortedTransactions() -> [Transaction] {
+        return store.transactions
+            .filter { tx in
+                let matchCategory = selectedCategory == nil || tx.category == selectedCategory
+                let matchYearMonth: Bool
+                if let ym = selectedYearMonth, let txDate = parseDate(tx.date) {
+                    let formatter = DateFormatter()
+                    formatter.locale = Locale(identifier: "ru_RU")
+                    formatter.dateFormat = "LLLL yyyy"
+                    matchYearMonth = formatter.string(from: txDate).capitalized == ym
+                } else {
+                    matchYearMonth = true
+                }
+                return matchCategory && matchYearMonth
+            }
+            .sorted {
+                guard let d1 = parseDate($0.date), let d2 = parseDate($1.date) else { return false }
+                return d1 > d2
+            }
     }
 
     func parseDate(_ string: String) -> Date? {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd" // формат от сервера
+        formatter.dateFormat = "yyyy-MM-dd"
         return formatter.date(from: string)
+    }
+
+    func uniqueCategories() -> [String] {
+        Array(Set(store.transactions.map { $0.category })).sorted()
+    }
+
+    func uniqueYearMonths() -> [String] {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "LLLL yyyy"
+
+        let dates = store.transactions.compactMap { parseDate($0.date) }
+
+        let monthYearTuples = dates.map { date in
+            let components = Calendar.current.dateComponents([.year, .month], from: date)
+            return components
+        }
+
+        let sorted = monthYearTuples
+            .compactMap { $0 }
+            .sorted {
+                if $0.year == $1.year {
+                    return ($0.month ?? 0) > ($1.month ?? 0)
+                }
+                return ($0.year ?? 0) > ($1.year ?? 0)
+            }
+
+        var seen: Set<String> = []
+        let result = sorted.compactMap { comp -> String? in
+            guard let date = Calendar.current.date(from: comp) else { return nil }
+            let str = formatter.string(from: date).capitalized
+            if seen.contains(str) {
+                return nil
+            } else {
+                seen.insert(str)
+                return str
+            }
+        }
+
+        return result
     }
 
     func iconName(for category: String) -> String {

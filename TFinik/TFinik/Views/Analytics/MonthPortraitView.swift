@@ -43,7 +43,7 @@ class PortraitViewModel: ObservableObject {
 
     func loadPortrait(token: String) {
         isLoading = true
-        var components = URLComponents(string: "http://169.254.142.87:8000/portrait")!
+        var components = URLComponents(string: "http://10.255.255.239:8000/portrait")!
         components.queryItems = [
             URLQueryItem(name: "month", value: "\(month)"),
             URLQueryItem(name: "year", value: "\(year)")

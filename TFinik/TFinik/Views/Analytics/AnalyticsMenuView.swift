@@ -4,6 +4,7 @@ struct AnalyticsMenuView: View {
     @AppStorage("selectedTab") private var selectedTab: String = "analytics"
     @State private var isShowingExpensesGraphic = false
     @State private var isShowingIncomeGraphic = false
+    @State private var isShowingTransactionHistory = false // ← Добавили
 
     var body: some View {
         ZStack {
@@ -24,7 +25,7 @@ struct AnalyticsMenuView: View {
                         // TODO
                     }
                     AnalyticsCard(icon: "💸", label: "Траты") {
-                        // TODO
+                        isShowingTransactionHistory = true // ← Переход
                     }
                     AnalyticsCard(icon: "💰", label: "Расходы") {
                         isShowingExpensesGraphic = true
@@ -35,7 +36,7 @@ struct AnalyticsMenuView: View {
                     AnalyticsCard(icon: "🤑", label: "Доходы") {
                         isShowingIncomeGraphic = true
                     }
-                    .gridCellColumns(2) // ← добавь это
+                    .gridCellColumns(2)
                 }
 
                 .padding(.top, 40)
@@ -52,8 +53,13 @@ struct AnalyticsMenuView: View {
         .navigationDestination(isPresented: $isShowingIncomeGraphic) {
             IncomeGraphView()
         }
+        .navigationDestination(isPresented: $isShowingTransactionHistory) {
+            TransactionHistoryView()
+                .environmentObject(TransactionStore())
+        }
     }
 }
+
 
 struct AnalyticsCard: View {
     let icon: String

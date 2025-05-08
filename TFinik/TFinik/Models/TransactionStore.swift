@@ -38,4 +38,34 @@ class TransactionStore: ObservableObject {
     func clear() {
         transactions.removeAll()
     }
+    
+    func fetchTransactions() {
+        print("🚀 Запуск запроса на сервер")
+
+        guard let token = KeychainHelper.shared.readAccessToken(),
+              let url = URL(string: "http://10.255.255.239:8000/transactions/history") else {
+            print("❌ Нет токена или URL")
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                if let data = data {
+                    print("📦 Получены данные:", String(data: data, encoding: .utf8) ?? "nil")
+                    do {
+                        self.transactions = try JSONDecoder().decode([Transaction].self, from: data)
+                        print("✅ Распарсили \(self.transactions.count) транзакций")
+                    } catch {
+                        print("❌ Ошибка декодирования:", error)
+                    }
+                } else if let error = error {
+                    print("❌ Ошибка запроса:", error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
 }

@@ -46,11 +46,16 @@ struct BankUploadView: View {
             BackgroundView()
 
             VStack(spacing: 16) {
-                Text("Загрузки выписок")
-                    .font(.title.bold())
-                    .foregroundColor(.white)
-                    .padding(.top, 32)
+                HStack {
+                    Text("📥")
+                        .font(.system(size: 32))
+                    Text("Загрузки выписок")
+                        .font(.title2.bold())
+                        .foregroundColor(.white)
+                }
+                .padding(.top, 40)
 
+                // Основной контент
                 if entries.isEmpty {
                     Spacer()
                     Text("Нет загруженных выписок")
@@ -97,6 +102,7 @@ struct BankUploadView: View {
         }
     }
 
+
     func uploadPDF(fileURL: URL, bank: String) {
         guard let token = KeychainHelper.shared.readAccessToken() else {
             print("\u{274C} Токен не найден")
@@ -127,7 +133,7 @@ struct BankUploadView: View {
         let filename = tempURL.lastPathComponent
         let mimetype = "application/pdf"
 
-        var request = URLRequest(url: URL(string: "http://169.254.142.87:8000/transactions/upload")!)
+        var request = URLRequest(url: URL(string: "http://10.255.255.239:8000/transactions/upload")!)
         let boundary = UUID().uuidString
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -173,7 +179,7 @@ struct BankUploadView: View {
             return
         }
 
-        var request = URLRequest(url: URL(string: "http://169.254.142.87:8000/statements")!)
+        var request = URLRequest(url: URL(string: "http://10.255.255.239:8000/statements")!)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         URLSession.shared.dataTask(with: request) { data, response, error in

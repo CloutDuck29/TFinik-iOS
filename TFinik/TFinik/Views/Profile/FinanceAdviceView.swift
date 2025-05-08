@@ -89,7 +89,7 @@ struct FinanceAdviceView: View {
 
     func loadAdvice() {
         guard let token = KeychainHelper.shared.readAccessToken(),
-              let url = URL(string: "http://169.254.142.87:8000/advice/monthly") else {
+              let url = URL(string: "http://10.255.255.239:8000/advice/monthly") else {
             self.isLoading = false
             return
         }

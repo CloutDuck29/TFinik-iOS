@@ -120,7 +120,7 @@ struct ExpensesChartView: View {
         if TokenStorage.shared.accessToken == nil {
             TokenStorage.shared.accessToken = KeychainHelper.shared.readAccessToken()
         }
-        guard let url = URL(string: "http://169.254.142.87:8000/analytics/categories"),
+        guard let url = URL(string: "http://10.255.255.239:8000/analytics/categories"),
               let token = TokenStorage.shared.accessToken else {
             print("❌ URL или токен не найдены")
             return

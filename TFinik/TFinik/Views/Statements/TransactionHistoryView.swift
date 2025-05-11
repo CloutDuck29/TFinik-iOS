@@ -16,7 +16,6 @@ struct TransactionHistoryView: View {
             BackgroundView()
 
             VStack(spacing: 20) {
-                // Заголовок
                 HStack {
                     Text("📝")
                         .font(.system(size: 32))
@@ -26,14 +25,12 @@ struct TransactionHistoryView: View {
                 }
                 .padding(.top, 125)
 
-                // Подзаголовок
                 Text("Здесь Вы можете увидеть историю трат и информацию по ним")
                     .font(.subheadline)
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
 
-                // Фильтры и сброс
                 HStack(spacing: 12) {
                     Menu {
                         Button("Все месяцы") { selectedYearMonth = nil }
@@ -69,14 +66,12 @@ struct TransactionHistoryView: View {
                 .font(.footnote)
                 .foregroundColor(.gray)
 
-                // Контент
                 if store.transactions.isEmpty {
                     Spacer()
                     ProgressView("Загрузка...")
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     Spacer()
                 } else {
-                    // Общая сумма вне скролла
                     let total = filteredAndSortedTransactions().reduce(0) { $0 + $1.amount }
                     Text(String(format: "%.0f₽", total))
                         .font(.title)
@@ -85,7 +80,6 @@ struct TransactionHistoryView: View {
                         .padding(.horizontal)
                         .padding(.top, 8)
 
-                    // Список транзакций
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             ForEach(filteredAndSortedTransactions()) { tx in
@@ -154,7 +148,6 @@ struct TransactionHistoryView: View {
         }
     }
 
-    // Фильтрация и сортировка
     func filteredAndSortedTransactions() -> [Transaction] {
         return store.transactions
             .filter { tx in

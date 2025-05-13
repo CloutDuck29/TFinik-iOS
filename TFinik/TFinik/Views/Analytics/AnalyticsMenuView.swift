@@ -6,6 +6,7 @@ struct AnalyticsMenuView: View {
     @State private var isShowingIncomeGraphic = false
     @State private var isShowingTransactionHistory = false
     @State private var isShowingFinancialGoals = false
+    @StateObject private var goalStore = GoalStore()
 
     var body: some View {
         NavigationStack {
@@ -48,7 +49,11 @@ struct AnalyticsMenuView: View {
                 .padding(.bottom, 80)
 
                 // Невидимый NavigationLink для целей
-                NavigationLink(destination: FinancialGoalsView(), isActive: $isShowingFinancialGoals) {
+                NavigationLink(
+                    destination: FinancialGoalsView()
+                        .environmentObject(goalStore), // 👈 сюда передаём
+                    isActive: $isShowingFinancialGoals
+                ) {
                     EmptyView()
                 }
                 .hidden()

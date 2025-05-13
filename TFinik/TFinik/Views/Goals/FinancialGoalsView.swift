@@ -9,12 +9,7 @@ struct FinancialGoal: Identifiable, Hashable {
 }
 
 struct FinancialGoalsView: View {
-    @State private var goals: [FinancialGoal] = [
-        FinancialGoal(id: UUID(), name: "Отпуск", targetAmount: 50000, currentAmount: 32000, isCompleted: false),
-        FinancialGoal(id: UUID(), name: "Ноутбук", targetAmount: 43000, currentAmount: 21000, isCompleted: false),
-        FinancialGoal(id: UUID(), name: "Арбуз", targetAmount: 1000, currentAmount: 700, isCompleted: false)
-    ]
-
+    @EnvironmentObject var goalStore: GoalStore
     @State private var selectedFilter: FilterType = .all
     @State private var selectedGoal: FinancialGoal? = nil
 
@@ -22,7 +17,8 @@ struct FinancialGoalsView: View {
         case all, active, completed
     }
 
-    var filteredGoals: [FinancialGoal] {
+    private var filteredGoals: [FinancialGoal] {
+        let goals = goalStore.goals.map { $0.toModel() }
         switch selectedFilter {
         case .all:
             return goals
@@ -63,7 +59,7 @@ struct FinancialGoalsView: View {
                     ScrollView {
                         VStack(spacing: 12) {
                             ForEach(filteredGoals) { goal in
-                                NavigationLink(destination: GoalDetailView(goal: goal)) {
+                                NavigationLink(destination: GoalDetailView(goalId: goal.id).environmentObject(goalStore)) {
                                     GoalCard(goal: goal)
                                 }
                             }
@@ -73,7 +69,7 @@ struct FinancialGoalsView: View {
 
                     Spacer()
 
-                    NavigationLink(destination: CreateGoalView()) {
+                    NavigationLink(destination: CreateGoalView().environmentObject(goalStore)) {
                         Image(systemName: "plus")
                             .foregroundColor(.black)
                             .padding()
@@ -83,10 +79,13 @@ struct FinancialGoalsView: View {
                     .padding(.bottom, 20)
                 }
             }
+            .onAppear {
+                goalStore.fetchGoals()
+            }
+
         }
     }
 }
-
 struct FilterButton: View {
     let title: String
     let color: Color

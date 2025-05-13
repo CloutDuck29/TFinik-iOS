@@ -3,6 +3,7 @@ import SwiftUI
 struct AddAmountView: View {
     let goal: FinancialGoal
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var goalStore: GoalStore
 
     @State private var amountText: String = ""
 
@@ -47,11 +48,20 @@ struct AddAmountView: View {
 
     private func addAmount() {
         guard let amount = Double(amountText), amount > 0 else {
-            return // можно добавить alert
+            return
         }
 
-        // TODO: отправка суммы к цели на сервер или локально
-        print("Добавлено \(amount)₽ к цели '", goal.name, "'")
+        if let dto = goalStore.goals.first(where: { $0.name == goal.name }) {
+            goalStore.addAmount(to: dto.id, amount: amount)
+        }
+
+
+
+        // ⏱ Обновим цели через 0.3 секунды после запроса (можно и сразу)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            goalStore.fetchGoals()
+        }
+
         dismiss()
     }
 }

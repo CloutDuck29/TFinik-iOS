@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CreateGoalView: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var goalStore: GoalStore
 
     @State private var name: String = ""
     @State private var targetAmount: String = ""
@@ -56,8 +57,7 @@ struct CreateGoalView: View {
             return // Можно добавить alert
         }
 
-        // TODO: Отправка данных на сервер или сохранение локально
-        print("Цель создана: \(name), сумма: \(amount), срок: \(deadline)")
+        goalStore.createGoal(name: name, targetAmount: amount, deadline: deadline)
         dismiss()
     }
 }

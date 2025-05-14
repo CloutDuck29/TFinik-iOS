@@ -99,52 +99,37 @@ final class AuthService: ObservableObject {
         return KeychainHelper.shared.readAccessToken() != nil
     }
 
-    func refreshAccessTokenIfNeeded(completion: @escaping (Bool) -> Void) {
-        guard let refreshToken = TokenStorage.shared.refreshToken else {
-            completion(false)
-            return
-        }
+    @MainActor
+    func refreshAccessTokenIfNeeded() async -> Bool {
+        guard let refreshToken = TokenStorage.shared.refreshToken else { return false }
 
-        guard let url = URL(string: "http://10.255.255.239:8000/auth/refresh") else {
-            completion(false)
-            return
-        }
+        guard let url = URL(string: "http://10.255.255.239:8000/auth/refresh") else { return false }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let body = ["refresh_token": refreshToken]
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         do {
-            request.httpBody = try JSONEncoder().encode(body)
+            request.httpBody = try JSONEncoder().encode(["refresh_token": refreshToken])
         } catch {
             print("Ошибка кодирования body для refresh")
-            completion(false)
-            return
+            return false
         }
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let data = data else {
-                print("Нет данных от сервера")
-                completion(false)
-                return
-            }
-
-            do {
-                let tokens = try JSONDecoder().decode(TokenPair.self, from: data)
-                TokenStorage.shared.accessToken = tokens.access_token
-                TokenStorage.shared.refreshToken = tokens.refresh_token
-                KeychainHelper.shared.save(tokens: tokens)
-
-                print("✅ Access токен обновлён успешно")
-                completion(true)
-            } catch {
-                print("❌ Ошибка обновления токена: \(error)")
-                completion(false)
-            }
-        }.resume()
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            let tokens = try JSONDecoder().decode(TokenPair.self, from: data)
+            TokenStorage.shared.accessToken = tokens.access_token
+            TokenStorage.shared.refreshToken = tokens.refresh_token
+            KeychainHelper.shared.save(tokens: tokens)
+            print("✅ Access токен обновлён успешно")
+            return true
+        } catch {
+            print("❌ Ошибка обновления токена: \(error)")
+            return false
+        }
     }
+
 }
 
 struct Creds: Codable {

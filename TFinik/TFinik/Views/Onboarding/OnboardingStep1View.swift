@@ -1,19 +1,23 @@
 import SwiftUI
 
 struct OnboardingStep1View: View {
+    @Binding var step: OnboardingStep
+    @State private var isVisible = false
     @State private var currentIndex: Int = 0
+
     private let banknoteImages = ["banknote500", "banknote1000", "banknote5000"]
 
     var body: some View {
-            VStack {
-                Spacer(minLength: 80)
+        VStack {
+            Spacer(minLength: 80)
 
-                // Карточки с банкнотами
+            if isVisible {
                 let displayed = [
                     banknoteImages[currentIndex],
                     banknoteImages[(currentIndex + 1) % banknoteImages.count],
                     banknoteImages[(currentIndex + 2) % banknoteImages.count]
                 ]
+
                 VStack(alignment: .trailing, spacing: -40) {
                     ForEach(displayed.indices, id: \.self) { idx in
                         Image(displayed[idx])
@@ -28,33 +32,35 @@ struct OnboardingStep1View: View {
                 .frame(maxWidth: .infinity)
                 .padding(.trailing, 56)
                 .padding(.bottom, 20)
+                .transition(.opacity)
+            }
 
-                Spacer(minLength: 60)
+            Spacer(minLength: 60)
 
-                // Тексты
+            if isVisible {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Управляйте своими финансами")
                         .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
-                        .multilineTextAlignment(.leading)
 
                     Text("Забудьте о том, чтобы вспоминать, куда вы вчера потратили очередную тысячу рублей.")
                         .font(.subheadline)
                         .foregroundColor(.gray)
-                        .multilineTextAlignment(.leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 32)
                 .padding(.bottom, 40)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .transition(.opacity)
             }
         }
-    }
-
-
-struct OnboardingStep1View_Previews: PreviewProvider {
-    static var previews: some View {
-        OnboardingStep1View()
-            .preferredColorScheme(.dark)
+        .onAppear {
+            isVisible = step == .intro
+        }
+        .onChange(of: step) { newStep in
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isVisible = (newStep == .intro)
+            }
+        }
     }
 }

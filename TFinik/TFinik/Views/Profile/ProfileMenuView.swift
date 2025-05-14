@@ -30,7 +30,7 @@ struct ProfileMenuView: View {
                         ProfileCard(icon: "🔥", label: "Советы") {
                             isShowingAdviceView = true
                         }
-                        ProfileCard(icon: "📃", label: "История") {
+                        ProfileCard(icon: "🛠", label: "Прогноз") {
                             isShowingHistoryView = true
                         }
                         ProfileCard(icon: "😁", label: "Портрет") {
@@ -55,7 +55,7 @@ struct ProfileMenuView: View {
                 }
                 .navigationDestination(isPresented: $isShowingPortraitView) {
                     MonthPortraitView()
-                        .environmentObject(auth) // <--- вот это добавь
+                        .environmentObject(auth)
                 }
             }
             .ignoresSafeArea()
@@ -104,7 +104,7 @@ struct ProfileButton: View {
                 // Эмодзи
                 Text(icon)
                     .font(.system(size: 28)) // Увеличиваем размер эмодзи для лучшего выравнивания
-                Spacer(minLength: 8) // Отступ между эмодзи и текстом
+                Spacer(minLength: 8)
                 // Текст
                 Text(title)
                     .font(.headline)

@@ -33,9 +33,6 @@ struct AnalyticsMenuView: View {
                         AnalyticsCard(icon: "💰", label: "Расходы") {
                             isShowingExpensesGraphic = true
                         }
-                        AnalyticsCard(icon: "🛠", label: "Прогноз") {
-                            // TODO
-                        }
                         AnalyticsCard(icon: "🤑", label: "Доходы") {
                             isShowingIncomeGraphic = true
                         }

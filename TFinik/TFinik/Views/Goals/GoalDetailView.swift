@@ -61,7 +61,7 @@ struct GoalDetailView: View {
                 }
                 .padding(.top, 60)
                 .sheet(isPresented: $isEditing) {
-                    EditGoalView(goal: goal)
+                    EditGoalView(goal: goal).environmentObject(goalStore)
                 }
                 .sheet(isPresented: $isAddingAmount) {
                     AddAmountView(goal: goal).environmentObject(goalStore)

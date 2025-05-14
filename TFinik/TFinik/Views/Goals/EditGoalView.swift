@@ -2,6 +2,7 @@ import SwiftUI
 
 struct EditGoalView: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var goalStore: GoalStore
 
     var goal: FinancialGoal
 
@@ -13,7 +14,7 @@ struct EditGoalView: View {
         self.goal = goal
         _name = State(initialValue: goal.name)
         _targetAmount = State(initialValue: String(Int(goal.targetAmount)))
-        _deadline = State(initialValue: Date()) // Заменить, если есть хранимое значение
+        _deadline = State(initialValue: goal.deadline ?? Date())
     }
 
     var body: some View {
@@ -61,8 +62,17 @@ struct EditGoalView: View {
     private func saveChanges() {
         guard !name.isEmpty, let amount = Double(targetAmount) else { return }
 
-        // TODO: сохранить изменения в цель (через API или локально)
-        print("Цель обновлена: \(name), сумма: \(amount), срок: \(deadline)")
+        // 🔧 Вызов метода обновления
+        goalStore.updateGoal(id: goal.originalId, name: name, targetAmount: amount, deadline: deadline)
         dismiss()
+    }
+
+    // Преобразование UUID в Int (если нужно)
+    private func extractId(from uuid: UUID) -> Int {
+        // ⚠️ Вариант только если где-то хранишь Int id и соответствие UUID ↔ Int
+        if let dto = goalStore.goals.first(where: { $0.uuid == uuid.uuidString }) {
+            return dto.id
+        }
+        return -1 // или бросить ошибку
     }
 }

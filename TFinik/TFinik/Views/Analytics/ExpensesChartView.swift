@@ -1,3 +1,5 @@
+// MARK: диаграмма расходов (аналитика трат)
+
 import SwiftUI
 import Charts
 

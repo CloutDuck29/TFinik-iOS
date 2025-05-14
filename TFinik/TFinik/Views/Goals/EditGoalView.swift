@@ -1,10 +1,10 @@
 import SwiftUI
 
 struct EditGoalView: View {
-    @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var goalStore: GoalStore
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var goalStore: GoalStore
 
-    var goal: FinancialGoal
+    let goal: FinancialGoal
 
     @State private var name: String
     @State private var targetAmount: String
@@ -28,7 +28,7 @@ struct EditGoalView: View {
                     .font(.title2.bold())
                     .foregroundColor(.white)
 
-                Group {
+                VStack(spacing: 12) {
                     TextField("Название цели", text: $name)
                         .textFieldStyle(.roundedBorder)
 
@@ -42,16 +42,14 @@ struct EditGoalView: View {
                 }
                 .padding(.horizontal)
 
-                Button("Сохранить изменения") {
-                    saveChanges()
-                }
-                .font(.headline)
-                .foregroundColor(.black)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color.white)
-                .cornerRadius(12)
-                .padding(.horizontal)
+                Button("Сохранить изменения", action: saveChanges)
+                    .font(.headline)
+                    .foregroundColor(.black)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .padding(.horizontal)
 
                 Spacer()
             }
@@ -61,18 +59,7 @@ struct EditGoalView: View {
 
     private func saveChanges() {
         guard !name.isEmpty, let amount = Double(targetAmount) else { return }
-
-        // 🔧 Вызов метода обновления
         goalStore.updateGoal(id: goal.originalId, name: name, targetAmount: amount, deadline: deadline)
         dismiss()
-    }
-
-    // Преобразование UUID в Int (если нужно)
-    private func extractId(from uuid: UUID) -> Int {
-        // ⚠️ Вариант только если где-то хранишь Int id и соответствие UUID ↔ Int
-        if let dto = goalStore.goals.first(where: { $0.uuid == uuid.uuidString }) {
-            return dto.id
-        }
-        return -1 // или бросить ошибку
     }
 }

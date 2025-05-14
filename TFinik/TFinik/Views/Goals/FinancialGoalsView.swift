@@ -1,16 +1,5 @@
 import SwiftUI
 
-struct FinancialGoal: Identifiable, Hashable {
-    let id: UUID
-    let originalId: Int
-    let name: String
-    let targetAmount: Double
-    let currentAmount: Double
-    let deadline: Date? 
-}
-
-
-
 struct FinancialGoalsView: View {
     @EnvironmentObject var goalStore: GoalStore
     @State private var selectedFilter: FilterType = .active
@@ -89,6 +78,7 @@ struct FinancialGoalsView: View {
         }
     }
 }
+
 struct FilterButton: View {
     let title: String
     let color: Color

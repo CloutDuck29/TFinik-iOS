@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct CreateGoalView: View {
-    @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var goalStore: GoalStore
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var goalStore: GoalStore
 
-    @State private var name: String = ""
-    @State private var targetAmount: String = ""
-    @State private var deadline: Date = Date()
+    @State private var name = ""
+    @State private var targetAmount = ""
+    @State private var deadline = Date()
 
     var body: some View {
         ZStack {
@@ -19,7 +19,7 @@ struct CreateGoalView: View {
                     .font(.title2.bold())
                     .foregroundColor(.white)
 
-                Group {
+                VStack(spacing: 12) {
                     TextField("Название цели", text: $name)
                         .textFieldStyle(.roundedBorder)
 
@@ -33,18 +33,14 @@ struct CreateGoalView: View {
                 }
                 .padding(.horizontal)
 
-                Button(action: {
-                    createGoal()
-                }) {
-                    Text("Создать цель")
-                        .font(.headline)
-                        .foregroundColor(.black)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .padding(.horizontal)
-                }
+                Button("Создать цель", action: createGoal)
+                    .font(.headline)
+                    .foregroundColor(.black)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .padding(.horizontal)
 
                 Spacer()
             }
@@ -53,10 +49,7 @@ struct CreateGoalView: View {
     }
 
     private func createGoal() {
-        guard !name.isEmpty, let amount = Double(targetAmount) else {
-            return // Можно добавить alert
-        }
-
+        guard !name.isEmpty, let amount = Double(targetAmount) else { return }
         goalStore.createGoal(name: name, targetAmount: amount, deadline: deadline)
         dismiss()
     }

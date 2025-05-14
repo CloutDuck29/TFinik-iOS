@@ -2,10 +2,10 @@ import SwiftUI
 
 struct AddAmountView: View {
     let goal: FinancialGoal
-    @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var goalStore: GoalStore
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var goalStore: GoalStore
     @State private var showOverflowAlert = false
-    @State private var amountText: String = ""
+    @State private var amountText = ""
     
     var onSuccess: (() -> Void)? = nil
 
@@ -31,48 +31,41 @@ struct AddAmountView: View {
                         .padding(.horizontal)
                 }
 
-                Button("Занести") {
-                    addAmount()
-                }
-                .font(.headline)
-                .foregroundColor(.black)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color.white)
-                .cornerRadius(12)
-                .padding(.horizontal)
+                Button("Занести", action: addAmount)
+                    .font(.headline)
+                    .foregroundColor(.black)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .padding(.horizontal)
 
                 Spacer()
             }
             .padding(.top, 60)
         }
-        // 👇 Добавляем alert здесь
         .alert("⚠️ Превышение цели", isPresented: $showOverflowAlert) {
             Button("Ок", role: .cancel) { }
         } message: {
-            Text("Добавляемая сумма превышает целевое значение. Пожалуйста, введите меньшую сумму.")
+            Text("Добавляемая сумма превышает целевое значение.")
         }
     }
 
-
     private func addAmount() {
-        guard let amount = Double(amountText), amount > 0 else { return }
+        guard let amount = Double(amountText), amount > 0,
+              let dto = goalStore.goals.first(where: { $0.name == goal.name }) else { return }
 
-        if let dto = goalStore.goals.first(where: { $0.name == goal.name }) {
-            let total = dto.current_amount + amount
-            if total > dto.target_amount {
-                showOverflowAlert = true
-                return
-            }
+        if dto.current_amount + amount > dto.target_amount {
+            showOverflowAlert = true
+            return
+        }
 
-            goalStore.addAmount(to: dto.id, amount: amount)
-            onSuccess?()
+        goalStore.addAmount(to: dto.id, amount: amount)
+        onSuccess?()
+        dismiss()
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                goalStore.fetchGoals()
-            }
-
-            dismiss()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            goalStore.fetchGoals()
         }
     }
 }

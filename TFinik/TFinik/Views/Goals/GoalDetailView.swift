@@ -8,7 +8,7 @@ struct GoalDetailView: View {
         goalStore.goals.map { $0.toModel() }.first(where: { $0.id == goalId })
     }
 
-
+    @State private var showSuccessAlert = false
     @State private var isEditing = false
     @State private var isAddingAmount = false
 
@@ -64,7 +64,12 @@ struct GoalDetailView: View {
                     EditGoalView(goal: goal).environmentObject(goalStore)
                 }
                 .sheet(isPresented: $isAddingAmount) {
-                    AddAmountView(goal: goal).environmentObject(goalStore)
+                    AddAmountView(goal: goal, onSuccess: {
+                        showSuccessAlert = true
+                    }).environmentObject(goalStore)
+                }
+                .alert("✅ Сумма добавлена", isPresented: $showSuccessAlert) {
+                    Button("Ок", role: .cancel) { }
                 }
             } else {
                 Text("Цель не найдена")

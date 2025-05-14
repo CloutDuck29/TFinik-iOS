@@ -6,7 +6,6 @@ struct FinancialGoal: Identifiable, Hashable {
     let name: String
     let targetAmount: Double
     let currentAmount: Double
-    let isCompleted: Bool
     let deadline: Date? 
 }
 
@@ -14,7 +13,7 @@ struct FinancialGoal: Identifiable, Hashable {
 
 struct FinancialGoalsView: View {
     @EnvironmentObject var goalStore: GoalStore
-    @State private var selectedFilter: FilterType = .all
+    @State private var selectedFilter: FilterType = .active
     @State private var selectedGoal: FinancialGoal? = nil
 
     enum FilterType {
@@ -27,9 +26,9 @@ struct FinancialGoalsView: View {
         case .all:
             return goals
         case .active:
-            return goals.filter { !$0.isCompleted }
+            return goals.filter { $0.currentAmount < $0.targetAmount }
         case .completed:
-            return goals.filter { $0.isCompleted }
+            return goals.filter { $0.currentAmount >= $0.targetAmount }
         }
     }
 
@@ -114,6 +113,10 @@ struct GoalCard: View {
         min(goal.currentAmount / goal.targetAmount, 1.0)
     }
 
+    var statusIcon: String {
+        progress >= 1.0 ? "✅" : "🟢"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -131,9 +134,13 @@ struct GoalCard: View {
                 .background(Color.gray.opacity(0.3))
                 .cornerRadius(4)
 
-            Text("\(Int(progress * 100))% выполнено")
-                .font(.caption2)
-                .foregroundColor(.gray)
+            HStack {
+                Text("\(Int(progress * 100))% выполнено")
+                Spacer()
+                Text(statusIcon)
+            }
+            .font(.caption2)
+            .foregroundColor(.gray)
         }
         .padding()
         .background(Color.black.opacity(0.3))

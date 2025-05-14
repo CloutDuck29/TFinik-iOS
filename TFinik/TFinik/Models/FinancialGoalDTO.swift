@@ -7,7 +7,6 @@ struct FinancialGoalDTO: Codable, Identifiable {
     let target_amount: Double
     let current_amount: Double
     let deadline: String?
-    let is_completed: Bool?
     let user_email: String?
 
     func toModel() -> FinancialGoal {
@@ -26,7 +25,6 @@ struct FinancialGoalDTO: Codable, Identifiable {
             name: name,
             targetAmount: target_amount,
             currentAmount: current_amount,
-            isCompleted: is_completed ?? (current_amount >= target_amount),
             deadline: parsedDeadline
         )
     }

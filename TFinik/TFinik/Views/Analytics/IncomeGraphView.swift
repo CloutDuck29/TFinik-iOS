@@ -1,14 +1,6 @@
 import SwiftUI
 import Charts
 
-struct IncomeEntry: Identifiable, Decodable, Equatable {
-    let id = UUID()
-    let month: String
-    let category: String
-    let amount: Double
-    let description: String?
-}
-
 struct IncomeGraphView: View {
     @Environment(\.dismiss) var dismiss
     @State private var data: [IncomeEntry] = []
@@ -19,18 +11,7 @@ struct IncomeGraphView: View {
             BackgroundView()
 
             VStack(spacing: 16) {
-                HStack {
-                    Text("📈")
-                        .font(.system(size: 32))
-                    Text("График доходов")
-                        .font(.title2.bold())
-                        .foregroundColor(.white)
-                }
-                .padding(.top, 125)
-
-                Text("Здесь Вы можете увидеть график Ваших доходов")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
+                header
 
                 if isLoading {
                     ProgressView()
@@ -38,57 +19,12 @@ struct IncomeGraphView: View {
                         .scaleEffect(1.5)
                         .padding(.top, 60)
                 } else {
-                    Chart(data) {
-                        BarMark(
-                            x: .value("Месяц", $0.month),
-                            y: .value("Сумма", $0.amount)
-                        )
-                        .foregroundStyle(by: .value("Категория", $0.category))
+                    graph
+
+                    if !incomeDescriptions.isEmpty {
+                        descriptionBlock
                     }
-                    .frame(height: 250)
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.purple, lineWidth: 1)
-                            .background(Color.black.opacity(0.1).cornerRadius(16))
-                    )
-                    .padding(.horizontal)
-                    .transition(.opacity.combined(with: .scale))
-                    .animation(.easeInOut, value: data)
                 }
-
-                if !incomeDescriptions.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Описание доходов")
-                            .font(.subheadline.bold())
-                            .foregroundColor(.white)
-
-                        ScrollView(.vertical, showsIndicators: true) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                ForEach(Array(incomeDescriptions.enumerated()), id: \.offset) { index, desc in
-                                    Text("• \(desc)")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                        .lineLimit(2)
-                                }
-                            }
-                            .padding(.trailing, 8) // 👈 Уменьшенный правый отступ
-                            .padding(.leading, 4)  // 👈 Уменьшенный левый отступ
-                        }
-                        .frame(height: 150)
-                    }
-                    .padding(.horizontal, 16) // нормальные внешние боковые отступы блока
-                    .padding(.vertical, 12)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.purple, lineWidth: 1)
-                            .background(Color.black.opacity(0.1).cornerRadius(16))
-                    )
-                    .padding(.horizontal)
-                }
-
-
 
                 Spacer()
             }
@@ -96,42 +32,97 @@ struct IncomeGraphView: View {
         }
         .ignoresSafeArea()
         .onAppear {
-            fetchGraphData()
+            Task { await loadData() }
         }
     }
 
+    // MARK: - Заголовок
+    private var header: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("📈")
+                    .font(.system(size: 32))
+                Text("График доходов")
+                    .font(.title2.bold())
+                    .foregroundColor(.white)
+            }
+            .padding(.top, 125)
+
+            Text("Здесь Вы можете увидеть график Ваших доходов")
+                .font(.subheadline)
+                .foregroundColor(.gray)
+        }
+    }
+
+    // MARK: - График
+    private var graph: some View {
+        Chart(data) {
+            BarMark(
+                x: .value("Месяц", $0.month),
+                y: .value("Сумма", $0.amount)
+            )
+            .foregroundStyle(by: .value("Категория", $0.category))
+        }
+        .frame(height: 250)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.purple, lineWidth: 1)
+                .background(Color.black.opacity(0.1).cornerRadius(16))
+        )
+        .padding(.horizontal)
+        .transition(.opacity.combined(with: .scale))
+        .animation(.easeInOut, value: data)
+    }
+
+    // MARK: - Блок описания
+    private var descriptionBlock: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Описание доходов")
+                .font(.subheadline.bold())
+                .foregroundColor(.white)
+
+            ScrollView(.vertical, showsIndicators: true) {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(incomeDescriptions.uniqued(), id: \.self) { desc in
+                        Text("• \(desc)")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .lineLimit(2)
+                    }
+                }
+                .padding(.trailing, 8)
+                .padding(.leading, 4)
+            }
+            .frame(height: 150)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.purple, lineWidth: 1)
+                .background(Color.black.opacity(0.1).cornerRadius(16))
+        )
+        .padding(.horizontal)
+    }
+
+    // MARK: - Уникальные описания
     var incomeDescriptions: [String] {
         data.compactMap { $0.description }
     }
 
-    func fetchGraphData() {
-        guard let token = KeychainHelper.shared.readAccessToken(),
-              let url = URL(string: "http://10.255.255.239:8000/analytics/income") else {
-            return
+    // MARK: - Загрузка данных
+    @MainActor
+    func loadData() async {
+        isLoading = true
+        switch await AnalyticsService.shared.fetchIncomeAnalytics() {
+        case .success(let result):
+            data = result
+            isLoading = false
+        case .failure(let error):
+            print("❌ Ошибка получения доходов: \(error)")
+            isLoading = false
         }
-
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        URLSession.shared.dataTask(with: request) { responseData, response, error in
-            if let data = responseData {
-                do {
-                    let decoded = try JSONDecoder().decode([IncomeEntry].self, from: data)
-                    DispatchQueue.main.async {
-                        self.data = decoded
-                        self.isLoading = false
-                    }
-                } catch {
-                    print("❌ Ошибка декодирования: \(error)")
-                }
-            }
-        }.resume()
-    }
-}
-
-extension Sequence where Element: Hashable {
-    func uniqued() -> [Element] {
-        var seen = Set<Element>()
-        return filter { seen.insert($0).inserted }
     }
 }

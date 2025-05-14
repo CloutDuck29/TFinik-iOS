@@ -20,6 +20,10 @@ final class AnalyticsService {
     func fetchMonthlyAnalytics() async -> Result<[ExpenseEntry], AnalyticsError> {
         await fetch(endpoint: "/analytics/monthly", as: [ExpenseEntry].self)
     }
+    
+    func fetchIncomeAnalytics() async -> Result<[IncomeEntry], AnalyticsError> {
+        await fetch(endpoint: "/analytics/income", as: [IncomeEntry].self)
+    }
 
     private func fetch<T: Decodable>(endpoint: String, as type: T.Type) async -> Result<T, AnalyticsError> {
         guard let token = KeychainHelper.shared.readAccessToken(),

@@ -28,6 +28,12 @@ extension Date {
     }
 }
 
+extension Sequence where Element: Hashable {
+    func uniqued() -> [Element] {
+        var seen = Set<Element>()
+        return filter { seen.insert($0).inserted }
+    }
+}
 
 extension Data {
     mutating func append(_ string: String) {

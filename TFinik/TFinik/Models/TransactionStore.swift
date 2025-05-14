@@ -1,3 +1,5 @@
+// MARK: Связующее звено между UI и сервисом транзакций (управляет списком транзакций и уведомляет интерфейс об изменениях)
+
 import Foundation
 import Combine
 
@@ -5,12 +7,11 @@ class TransactionStore: ObservableObject {
     @Published var transactions: [Transaction] = []
 
     func loadMockTransactions(for banks: [String]) {
-        // Пример моков:
         transactions = [
             Transaction(
                 id: 1,
                 date: "22.04.2025",
-                time: "12:00", // или nil, если времени нет
+                time: "12:00",
                 amount: 1300,
                 isIncome: false,
                 description: "Перевод",
@@ -20,7 +21,7 @@ class TransactionStore: ObservableObject {
             Transaction(
                 id: 2,
                 date: "21.04.2025",
-                time: "15:30", // или nil
+                time: "15:30",
                 amount: 70000,
                 isIncome: true,
                 description: "Зарплата",
@@ -28,7 +29,6 @@ class TransactionStore: ObservableObject {
                 bank: "Sber"
             )
         ].filter { banks.contains($0.bank) }
-
     }
 
     func add(_ transaction: Transaction) {
@@ -38,34 +38,23 @@ class TransactionStore: ObservableObject {
     func clear() {
         transactions.removeAll()
     }
-    
-    func fetchTransactions() {
-        print("🚀 Запуск запроса на сервер")
 
-        guard let token = KeychainHelper.shared.readAccessToken(),
-              let url = URL(string: "http://10.255.255.239:8000/transactions/history") else {
-            print("❌ Нет токена или URL")
+    func fetchTransactions() {
+        guard let token = KeychainHelper.shared.readAccessToken() else {
+            print("❌ Нет токена")
             return
         }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        TransactionService.shared.fetchAll(token: token) { result in
             DispatchQueue.main.async {
-                if let data = data {
-                    print("📦 Получены данные:", String(data: data, encoding: .utf8) ?? "nil")
-                    do {
-                        self.transactions = try JSONDecoder().decode([Transaction].self, from: data)
-                        print("✅ Распарсили \(self.transactions.count) транзакций")
-                    } catch {
-                        print("❌ Ошибка декодирования:", error)
-                    }
-                } else if let error = error {
-                    print("❌ Ошибка запроса:", error.localizedDescription)
+                switch result {
+                case .success(let txs):
+                    self.transactions = txs
+                    print("✅ Загрузили \(txs.count) транзакций")
+                case .failure(let error):
+                    print("❌ Ошибка загрузки транзакций: \(error)")
                 }
             }
-        }.resume()
+        }
     }
 }

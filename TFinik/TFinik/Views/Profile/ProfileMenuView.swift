@@ -1,12 +1,11 @@
+// MARK: Меню профиля
+
 import SwiftUI
 
 struct ProfileMenuView: View {
     @AppStorage("selectedTab") private var selectedTab: String = "analytics"
     @EnvironmentObject var auth: AuthService
-    @State private var isShowingBankUploadView = false
-    @State private var isShowingAdviceView = false
-    @State private var isShowingHistoryView = false
-    @State private var isShowingPortraitView = false
+    @State private var destination: ProfileDestination?
 
     var body: some View {
         NavigationStack {
@@ -24,17 +23,10 @@ struct ProfileMenuView: View {
                     .padding(.top, 125)
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
-                        ProfileCard(icon: "🎯", label: "Выписки") {
-                            isShowingBankUploadView = true
-                        }
-                        ProfileCard(icon: "🔥", label: "Советы") {
-                            isShowingAdviceView = true
-                        }
-                        ProfileCard(icon: "🛠", label: "Прогноз") {
-                            isShowingHistoryView = true
-                        }
-                        ProfileCard(icon: "😁", label: "Портрет") {
-                            isShowingPortraitView = true
+                        ForEach(cards, id: \.label) { card in
+                            ProfileCard(icon: card.icon, label: card.label) {
+                                destination = card.destination
+                            }
                         }
                     }
                     .padding(.top, 40)
@@ -43,23 +35,30 @@ struct ProfileMenuView: View {
                     Spacer()
                 }
                 .padding(.bottom, 80)
-
-                .navigationDestination(isPresented: $isShowingBankUploadView) {
-                    BankUploadView().environmentObject(auth)
-                }
-                .navigationDestination(isPresented: $isShowingAdviceView) {
-                    FinanceAdviceView()
-                }
-                .navigationDestination(isPresented: $isShowingHistoryView) {
-                    FinanceAdviceView()
-                }
-                .navigationDestination(isPresented: $isShowingPortraitView) {
-                    MonthPortraitView()
-                        .environmentObject(auth)
-                }
             }
             .ignoresSafeArea()
+            .navigationDestination(item: $destination) { dest in
+                switch dest {
+                case .statements:
+                    BankUploadView().environmentObject(auth)
+                case .advice:
+                    FinanceAdviceView()
+                case .forecast:
+                    FinanceAdviceView() // заменишь при появлении реального
+                case .portrait:
+                    MonthPortraitView().environmentObject(auth)
+                }
+            }
         }
+    }
+
+    private var cards: [ProfileCardData] {
+        [
+            .init(icon: "🎯", label: "Выписки", destination: .statements),
+            .init(icon: "🔥", label: "Советы", destination: .advice),
+            .init(icon: "🛠", label: "Прогноз", destination: .forecast),
+            .init(icon: "😁", label: "Портрет", destination: .portrait)
+        ]
     }
 }
 
@@ -71,11 +70,8 @@ struct ProfileCard: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 8) {
-                Text(icon)
-                    .font(.system(size: 40))
-                Text(label)
-                    .font(.subheadline)
-                    .foregroundColor(.white)
+                Text(icon).font(.system(size: 40))
+                Text(label).font(.subheadline).foregroundColor(.white)
             }
             .frame(maxWidth: .infinity, minHeight: 100)
             .background(Color.black.opacity(0.3))
@@ -88,50 +84,12 @@ struct ProfileCard: View {
     }
 }
 
-
-
-
-struct ProfileButton: View {
-    let title: String
+struct ProfileCardData: Hashable {
     let icon: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                // Spacer перед эмодзи
-                Spacer()
-                // Эмодзи
-                Text(icon)
-                    .font(.system(size: 28)) // Увеличиваем размер эмодзи для лучшего выравнивания
-                Spacer(minLength: 8)
-                // Текст
-                Text(title)
-                    .font(.headline)
-                    .foregroundColor(.white)
-                // Spacer после текста
-                Spacer()
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color(hex: "1A1A1F")) // Задаем нужный цвет
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        LinearGradient(gradient: Gradient(colors: [Color(hex: "5800D3"), Color(hex: "8661D2")]), startPoint: .topLeading, endPoint: .bottomTrailing),
-                        lineWidth: 1
-                    )
-            ) // Добавляем градиентный stroke
-        }
-        .frame(maxWidth: .infinity)
-    }
+    let label: String
+    let destination: ProfileDestination
 }
 
-struct ProfileMenuView_Previews: PreviewProvider {
-    static var previews: some View {
-        AnalyticsMenuView()
-            .preferredColorScheme(.dark)
-    }
+enum ProfileDestination: Hashable {
+    case statements, advice, forecast, portrait
 }

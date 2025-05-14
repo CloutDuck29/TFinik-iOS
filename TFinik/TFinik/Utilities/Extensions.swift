@@ -1,3 +1,5 @@
+// MARK: Расширения для работы с данными и разными форматами
+
 import Foundation
 
 extension Date {
@@ -8,3 +10,11 @@ extension Date {
     }
 }
 
+
+extension Data {
+    mutating func append(_ string: String) {
+        if let data = string.data(using: .utf8) {
+            append(data)
+        }
+    }
+}

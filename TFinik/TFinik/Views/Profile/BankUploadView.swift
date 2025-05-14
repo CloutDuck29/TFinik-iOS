@@ -1,31 +1,8 @@
+// MARK: Дозагрузка последующих выписок
+
 import SwiftUI
 import UniformTypeIdentifiers
 import Foundation
-
-struct Statement: Identifiable, Decodable {
-    var id: Int
-    var bank: String
-    var date_start: String
-    var date_end: String
-
-    var dateStartAsDate: Date? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd.MM.yyyy"
-        return formatter.date(from: date_start)
-    }
-
-    var dateEndAsDate: Date? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd.MM.yyyy"
-        return formatter.date(from: date_end)
-    }
-}
-
-struct YearChunk: Identifiable {
-    var id = UUID()
-    var year: Int
-    var months: [Int: Bool] // месяц: true = загружен
-}
 
 struct BankUploadEntry: Identifiable {
     var id = UUID()
@@ -40,6 +17,8 @@ struct BankUploadView: View {
     @State private var selectedBank: String?
     @State private var isFileImporterPresented = false
     @State private var showDuplicateAlert = false
+    @State private var isLoading = false
+    @State private var showSuccessAlert = false
 
     var body: some View {
         ZStack {
@@ -55,8 +34,13 @@ struct BankUploadView: View {
                 }
                 .padding(.top, 40)
 
-                // Основной контент
-                if entries.isEmpty {
+                if isLoading {
+                    Spacer()
+                    ProgressView("Загрузка...")
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .foregroundColor(.white)
+                    Spacer()
+                } else if entries.isEmpty {
                     Spacer()
                     Text("Нет загруженных выписок")
                         .foregroundColor(.gray)
@@ -84,128 +68,55 @@ struct BankUploadView: View {
                 switch result {
                 case .success(let urls):
                     if let url = urls.first, let bank = selectedBank {
-                        uploadPDF(fileURL: url, bank: bank)
+                        isLoading = true
+                        TransactionService.shared.uploadStatementSimple(fileURL: url, bank: bank, token: auth.accessToken ?? "") { result in
+                            DispatchQueue.main.async {
+                                isLoading = false
+                                switch result {
+                                case .success:
+                                    showSuccessAlert = true
+                                    fetchStatements()
+                                case .failure(let error):
+                                    if let urlError = error as? URLError, urlError.code == .badServerResponse {
+                                        showDuplicateAlert = true
+                                    }
+                                    print("❌ Ошибка при загрузке: \(error.localizedDescription)")
+                                }
+                            }
+                        }
+
                     }
                 case .failure(let error):
                     print("Ошибка загрузки файла: \(error.localizedDescription)")
                 }
             }
         }
-        .alert("Такая выписка уже загружена", isPresented: $showDuplicateAlert) {
+        .alert("⚠️ Такая выписка уже загружена", isPresented: $showDuplicateAlert) {
+            Button("Ок", role: .cancel) { }
+        }
+        .alert("✅ Выписка успешно загружена", isPresented: $showSuccessAlert) {
             Button("Ок", role: .cancel) { }
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                print("\u{1F440} auth.accessToken = \(auth.accessToken ?? "nil")")
                 fetchStatements()
             }
         }
-    }
-
-
-    func uploadPDF(fileURL: URL, bank: String) {
-        guard let token = KeychainHelper.shared.readAccessToken() else {
-            print("\u{274C} Токен не найден")
-            return
-        }
-
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".pdf")
-
-        guard fileURL.startAccessingSecurityScopedResource() else {
-            print("\u{274C} Не удалось получить доступ к файлу")
-            return
-        }
-        defer { fileURL.stopAccessingSecurityScopedResource() }
-
-        do {
-            try FileManager.default.copyItem(at: fileURL, to: tempURL)
-            print("✅ Файл скопирован во временное место: \(tempURL.path)")
-        } catch {
-            print("\u{274C} Ошибка при копировании файла: \(error.localizedDescription)")
-            return
-        }
-
-        guard let data = try? Data(contentsOf: tempURL) else {
-            print("\u{274C} Не удалось прочитать данные из временного файла")
-            return
-        }
-
-        let filename = tempURL.lastPathComponent
-        let mimetype = "application/pdf"
-
-        var request = URLRequest(url: URL(string: "http://10.255.255.239:8000/transactions/upload")!)
-        let boundary = UUID().uuidString
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-
-        var body = Data()
-
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"bank\"\r\n\r\n".data(using: .utf8)!)
-        body.append("\(bank)\r\n".data(using: .utf8)!)
-
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: \(mimetype)\r\n\r\n".data(using: .utf8)!)
-        body.append(data)
-        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
-
-        URLSession.shared.uploadTask(with: request, from: body) { data, response, error in
-            if let error = error {
-                print("\u{274C} Ошибка загрузки: \(error.localizedDescription)")
-                return
-            }
-
-            if let httpResponse = response as? HTTPURLResponse {
-                print("\u{1F4E4} Ответ: \(httpResponse.statusCode)")
-                if httpResponse.statusCode == 400 {
-                    DispatchQueue.main.async {
-                        showDuplicateAlert = true
-                    }
-                    return
-                }
-            }
-
-            DispatchQueue.main.async {
-                fetchStatements()
-            }
-        }.resume()
     }
 
     func fetchStatements() {
-        guard let token = KeychainHelper.shared.readAccessToken() else {
-            print("\u{274C} Токен не найден в Keychain")
-            return
-        }
-
-        var request = URLRequest(url: URL(string: "http://10.255.255.239:8000/statements")!)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("\u{274C} Ошибка запроса: \(error.localizedDescription)")
-                return
-            }
-            if let httpResponse = response as? HTTPURLResponse {
-                print("ℹ️ Код ответа: \(httpResponse.statusCode)")
-            }
-
-            guard let data = data else {
-                print("\u{274C} Нет данных")
-                return
-            }
-
-            do {
-                let decoded = try JSONDecoder().decode([Statement].self, from: data)
-                print("✅ Получено \(decoded.count) выписок")
-                DispatchQueue.main.async {
-                    self.entries = processStatements(decoded)
+        isLoading = true
+        TransactionService.shared.fetchStatements(token: auth.accessToken ?? "") { result in
+            DispatchQueue.main.async {
+                isLoading = false
+                switch result {
+                case .success(let statements):
+                    self.entries = processStatements(statements)
+                case .failure(let error):
+                    print("❌ Ошибка получения выписок: \(error.localizedDescription)")
                 }
-            } catch {
-                print("\u{274C} Ошибка декодирования: \(error)")
             }
-        }.resume()
+        }
     }
 
     func processStatements(_ statements: [Statement]) -> [BankUploadEntry] {

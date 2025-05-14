@@ -84,7 +84,7 @@ class GoalService {
             payload["deadline"] = formatter.string(from: deadline)
         }
 
-        guard let request = makeRequest(path: "/goals", method: "POST", payload: payload) else { return }
+        guard let request = makeRequest(path: "/goals/", method: "POST", payload: payload) else { return }
 
         URLSession.shared.dataTask(with: request) { _, response, error in
             if let error = error {

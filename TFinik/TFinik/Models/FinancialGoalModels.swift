@@ -1,8 +1,9 @@
 import Foundation
 
+// MARK: - DTO (для работы с API)
 struct FinancialGoalDTO: Codable, Identifiable {
-    let id: Int  // ✅ исправлено с String на Int
-    let uuid: String  // если нужно — используешь UUID отдельно
+    let id: Int
+    let uuid: String
     let name: String
     let target_amount: Double
     let current_amount: Double
@@ -28,4 +29,14 @@ struct FinancialGoalDTO: Codable, Identifiable {
             deadline: parsedDeadline
         )
     }
+}
+
+// MARK: - Модель для отображения в UI
+struct FinancialGoal: Identifiable, Hashable {
+    let id: UUID
+    let originalId: Int
+    let name: String
+    let targetAmount: Double
+    let currentAmount: Double
+    let deadline: Date?
 }

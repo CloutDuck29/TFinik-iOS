@@ -1,3 +1,5 @@
+// MARK: - хранилище токенво (доступ к UserDefaults)
+
 import Foundation
 
 final class TokenStorage {

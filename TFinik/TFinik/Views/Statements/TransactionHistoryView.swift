@@ -7,122 +7,43 @@ struct TransactionHistoryResponse: Codable {
 struct TransactionHistoryView: View {
     @EnvironmentObject var store: TransactionStore
 
+    @State private var isLoading = true
     @State private var selectedCategory: String? = nil
     @State private var selectedYearMonth: String? = nil
-    @State private var hasLoaded = false
+
+    @State private var filteredTransactions: [Transaction] = []
+    @State private var totalAmount: Double = 0
+    @State private var allYearMonths: [String] = []
 
     var body: some View {
         ZStack {
             BackgroundView()
 
             VStack(spacing: 20) {
-                HStack {
-                    Text("📝")
-                        .font(.system(size: 32))
-                    Text("История трат")
-                        .font(.title2.bold())
-                        .foregroundColor(.white)
-                }
-                .padding(.top, 125)
+                header
+                filters
 
-                Text("Здесь Вы можете увидеть историю трат и информацию по ним")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-
-                HStack(spacing: 12) {
-                    Menu {
-                        Button("Все месяцы") { selectedYearMonth = nil }
-                        ForEach(uniqueYearMonths(), id: \.self) { ym in
-                            Button(ym) { selectedYearMonth = ym }
-                        }
-                    } label: {
-                        Label(selectedYearMonth ?? "Месяц", image: "")
-                            .labelStyle(EmojiLabelStyle(emoji: "📅"))
-                    }
-
-                    Menu {
-                        Button("Все категории") { selectedCategory = nil }
-                        ForEach(uniqueCategories(), id: \.self) { category in
-                            Button(category) { selectedCategory = category }
-                        }
-                    } label: {
-                        Label(selectedCategory ?? "Категория", image: "")
-                            .labelStyle(EmojiLabelStyle(emoji: "🗂"))
-                    }
-
-                    Button("↺") {
-                        selectedCategory = nil
-                        selectedYearMonth = nil
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.white.opacity(0.1))
-                    .cornerRadius(8)
-                }
-                .font(.footnote)
-                .foregroundColor(.gray)
-
-                if store.transactions.isEmpty {
+                if isLoading {
                     Spacer()
                     ProgressView("Загрузка...")
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     Spacer()
+                } else if filteredTransactions.isEmpty {
+                    Spacer()
+                    Text("Нет транзакций")
+                        .foregroundColor(.gray)
+                    Spacer()
                 } else {
-                    let total = filteredAndSortedTransactions().reduce(0) { $0 + $1.amount }
-                    Text(String(format: "%.0f₽", total))
+                    Text("Всего: \(Int(totalAmount))₽")
                         .font(.title)
                         .bold()
                         .foregroundColor(.white)
-                        .padding(.horizontal)
                         .padding(.top, 8)
 
                     ScrollView {
                         LazyVStack(spacing: 12) {
-                            ForEach(filteredAndSortedTransactions()) { tx in
-                                HStack {
-                                    ZStack {
-                                        Circle()
-                                            .fill(iconColor(for: tx.category).opacity(0.2))
-                                            .frame(width: 40, height: 40)
-                                        Image(systemName: iconName(for: tx.category))
-                                            .foregroundColor(iconColor(for: tx.category))
-                                    }
-
-                                    VStack(alignment: .leading) {
-                                        Text(tx.description)
-                                            .lineLimit(1)
-                                            .truncationMode(.tail)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.white)
-                                        Text(tx.category)
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
-                                    }
-
-                                    Spacer()
-
-                                    VStack(alignment: .trailing) {
-                                        Text(tx.date)
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
-                                        Text(String(format: "%.0f₽", tx.amount))
-                                            .foregroundColor(tx.isIncome ? .green : .white)
-                                            .fontWeight(.semibold)
-                                    }
-                                }
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.white.opacity(0.05))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(Color.purple, lineWidth: 1)
-                                        )
-                                )
+                            ForEach(filteredTransactions) { tx in
+                                transactionCard(tx)
                             }
                         }
                         .padding(.horizontal)
@@ -132,51 +53,135 @@ struct TransactionHistoryView: View {
 
                 Spacer()
             }
-            .padding(.bottom, 80)
+            .padding(.top, 80)
+            .padding(.bottom, 60)
         }
         .ignoresSafeArea()
-        .onAppear {
-            if !hasLoaded {
-                hasLoaded = true
-                store.fetchTransactions()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    if selectedYearMonth == nil {
-                        selectedYearMonth = uniqueYearMonths().first
-                    }
-                }
-            }
+        .onAppear(perform: loadData)
+    }
+
+    var header: some View {
+        HStack {
+            Text("📝")
+                .font(.system(size: 32))
+            Text("История трат")
+                .font(.title2.bold())
+                .foregroundColor(.white)
         }
     }
 
-    func filteredAndSortedTransactions() -> [Transaction] {
-        return store.transactions
-            .filter { tx in
-                let matchCategory = selectedCategory == nil || tx.category == selectedCategory
-                let matchYearMonth: Bool
-                if let ym = selectedYearMonth, let txDate = parseDate(tx.date) {
-                    let formatter = DateFormatter()
-                    formatter.locale = Locale(identifier: "ru_RU")
-                    formatter.dateFormat = "LLLL yyyy"
-                    matchYearMonth = formatter.string(from: txDate).capitalized == ym
-                } else {
-                    matchYearMonth = true
+    var filters: some View {
+        HStack(spacing: 12) {
+            Menu {
+                Button("Все месяцы") {
+                    selectedYearMonth = nil
+                    applyFilters()
                 }
-                return matchCategory && matchYearMonth
+                ForEach(allYearMonths, id: \.self) { ym in
+                    Button(ym) {
+                        selectedYearMonth = ym
+                        applyFilters()
+                    }
+                }
+            } label: {
+                Label(selectedYearMonth ?? "Месяц", image: "")
+                    .labelStyle(EmojiLabelStyle(emoji: "📅"))
+            }
+
+            Menu {
+                Button("Все категории") {
+                    selectedCategory = nil
+                    applyFilters()
+                }
+                ForEach(uniqueCategories(), id: \.self) { category in
+                    Button(category) {
+                        selectedCategory = category
+                        applyFilters()
+                    }
+                }
+            } label: {
+                Label(selectedCategory ?? "Категория", image: "")
+                    .labelStyle(EmojiLabelStyle(emoji: "🗂"))
+            }
+
+            Button("↺") {
+                selectedCategory = nil
+                selectedYearMonth = nil
+                if store.transactions.isEmpty {
+                    loadData()
+                } else {
+                    applyFilters()
+                }
+            }
+            .font(.headline)
+            .foregroundColor(.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.white.opacity(0.1))
+            .cornerRadius(8)
+        }
+        .font(.footnote)
+        .foregroundColor(.gray)
+    }
+
+    func loadData() {
+        Task {
+            isLoading = true
+            await store.fetchTransactions()
+            allYearMonths = uniqueYearMonths()
+            if selectedYearMonth == nil {
+                selectedYearMonth = allYearMonths.first
+            }
+            applyFilters()
+            isLoading = false
+        }
+    }
+
+    func applyFilters() {
+        if store.transactions.isEmpty {
+            Task {
+                isLoading = true
+                await store.fetchTransactions()
+                allYearMonths = uniqueYearMonths()
+                isLoading = false
+                applyFilters()
+            }
+            return
+        }
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "LLLL yyyy"
+
+        print("📌 selectedYM: \(selectedYearMonth ?? "nil")")
+
+        filteredTransactions = store.transactions
+            .filter { tx in
+                guard !tx.isIncome, tx.category != "Пополнение" else { return false }
+
+                let matchCategory = selectedCategory == nil || tx.category == selectedCategory
+
+                let matchYM: Bool = {
+                    guard let ym = selectedYearMonth,
+                          let date = parseDate(tx.date) else {
+                        print("⚠️ Ошибка парсинга даты: \(tx.date)")
+                        return true
+                    }
+
+                    let formatted = formatter.string(from: date).capitalized
+                    return formatted.lowercased() == ym.lowercased()
+                }()
+
+                return matchCategory && matchYM
             }
             .sorted {
                 guard let d1 = parseDate($0.date), let d2 = parseDate($1.date) else { return false }
                 return d1 > d2
             }
-    }
 
-    func parseDate(_ string: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: string)
-    }
+        totalAmount = filteredTransactions.reduce(0) { $0 + $1.amount }
 
-    func uniqueCategories() -> [String] {
-        Array(Set(store.transactions.map { $0.category })).sorted()
+        print("✅ Результат: \(filteredTransactions.count) транзакций")
     }
 
     func uniqueYearMonths() -> [String] {
@@ -184,45 +189,101 @@ struct TransactionHistoryView: View {
         formatter.locale = Locale(identifier: "ru_RU")
         formatter.dateFormat = "LLLL yyyy"
 
-        let dates = store.transactions.compactMap { parseDate($0.date) }
-
-        let monthYearTuples = dates.map { date in
-            let components = Calendar.current.dateComponents([.year, .month], from: date)
-            return components
-        }
-
-        let sorted = monthYearTuples
-            .compactMap { $0 }
-            .sorted {
-                if $0.year == $1.year {
-                    return ($0.month ?? 0) > ($1.month ?? 0)
-                }
-                return ($0.year ?? 0) > ($1.year ?? 0)
-            }
+        let sortedDates = store.transactions
+            .filter { !$0.isIncome && $0.category != "Пополнение" }
+            .compactMap { parseDate($0.date) }
+            .sorted(by: >)
 
         var seen: Set<String> = []
-        let result = sorted.compactMap { comp -> String? in
-            guard let date = Calendar.current.date(from: comp) else { return nil }
-            let str = formatter.string(from: date).capitalized
-            if seen.contains(str) {
-                return nil
-            } else {
-                seen.insert(str)
-                return str
+        var result: [String] = []
+
+        for date in sortedDates {
+            let ym = formatter.string(from: date).capitalized
+            if !seen.contains(ym) {
+                seen.insert(ym)
+                result.append(ym)
             }
         }
 
         return result
     }
 
+    func uniqueCategories() -> [String] {
+        Array(Set(
+            store.transactions
+                .filter { !$0.isIncome && $0.category != "Пополнение" }
+                .map { $0.category }
+        )).sorted()
+    }
+
+    func parseDate(_ string: String?) -> Date? {
+        guard let string = string?.trimmingCharacters(in: .whitespacesAndNewlines) else { return nil }
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+        if let date = formatter.date(from: string) {
+            return date
+        }
+
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withFullDate]
+        isoFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+        return isoFormatter.date(from: string)
+    }
+
+    func transactionCard(_ tx: Transaction) -> some View {
+        HStack {
+            ZStack {
+                Circle()
+                    .fill(iconColor(for: tx.category).opacity(0.2))
+                    .frame(width: 40, height: 40)
+                Image(systemName: iconName(for: tx.category))
+                    .foregroundColor(iconColor(for: tx.category))
+            }
+
+            VStack(alignment: .leading) {
+                Text(tx.description)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                Text(tx.category)
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing) {
+                Text(tx.date)
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                Text("\(Int(tx.amount))₽")
+                    .foregroundColor(.white)
+                    .fontWeight(.semibold)
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.purple, lineWidth: 1)
+                )
+        )
+    }
+
     func iconName(for category: String) -> String {
         switch category {
         case "Магазины": return "cart.fill"
         case "Транспорт": return "bus.fill"
-        case "Пополнение": return "plus.circle.fill"
         case "Переводы": return "arrow.left.arrow.right"
         case "Развлечения": return "gamecontroller.fill"
-        case "Доход": return "creditcard.fill"
         default: return "questionmark.circle"
         }
     }
@@ -231,10 +292,8 @@ struct TransactionHistoryView: View {
         switch category {
         case "Магазины": return .purple
         case "Транспорт": return .red
-        case "Пополнение": return .blue
         case "Переводы": return .orange
         case "Развлечения": return .pink
-        case "Доход": return .green
         default: return .gray
         }
     }

@@ -39,20 +39,23 @@ class TransactionStore: ObservableObject {
         transactions.removeAll()
     }
 
-    func fetchTransactions() {
+    func fetchTransactions() async {
         guard let token = KeychainHelper.shared.readAccessToken() else {
             print("❌ Нет токена")
             return
         }
 
-        TransactionService.shared.fetchAll(token: token) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let txs):
-                    self.transactions = txs
-                    print("✅ Загрузили \(txs.count) транзакций")
-                case .failure(let error):
-                    print("❌ Ошибка загрузки транзакций: \(error)")
+        await withCheckedContinuation { continuation in
+            TransactionService.shared.fetchAll(token: token) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let txs):
+                        self.transactions = txs
+                        print("✅ Загрузили \(txs.count) транзакций")
+                    case .failure(let error):
+                        print("❌ Ошибка загрузки транзакций: \(error)")
+                    }
+                    continuation.resume()
                 }
             }
         }

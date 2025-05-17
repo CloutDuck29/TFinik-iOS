@@ -44,7 +44,7 @@ struct ProfileMenuView: View {
                 case .advice:
                     FinanceAdviceView()
                 case .forecast:
-                    FinanceAdviceView() // заменишь при появлении реального
+                    ExpenseForecastView()
                 case .portrait:
                     MonthPortraitView().environmentObject(auth)
                 }

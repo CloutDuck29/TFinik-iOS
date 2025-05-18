@@ -6,6 +6,7 @@ struct ProfileMenuView: View {
     @AppStorage("selectedTab") private var selectedTab: String = "analytics"
     @EnvironmentObject var auth: AuthService
     @State private var destination: ProfileDestination?
+    @EnvironmentObject var transactionStore: TransactionStore
 
     var body: some View {
         NavigationStack {
@@ -45,9 +46,15 @@ struct ProfileMenuView: View {
                     FinanceAdviceView()
                 case .forecast:
                     ExpenseForecastView()
+                        .environmentObject(transactionStore)
                 case .portrait:
                     MonthPortraitView().environmentObject(auth)
                 }
+            }
+        }
+        .onAppear {
+            Task {
+                await transactionStore.fetchTransactions()
             }
         }
     }
@@ -61,6 +68,7 @@ struct ProfileMenuView: View {
         ]
     }
 }
+
 
 struct ProfileCard: View {
     let icon: String

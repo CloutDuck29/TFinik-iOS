@@ -44,3 +44,4 @@ struct Period: Codable {
     let start: String
     let end: String
 }
+

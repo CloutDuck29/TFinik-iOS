@@ -2,32 +2,9 @@ import SwiftUI
 import Charts
 
 struct ExpenseForecastView: View {
-    struct Forecast: Identifiable {
-        let id = UUID()
-        let month: String
-        let amount: Double
-    }
-
-    struct ForecastDetail: Identifiable {
-        let id = UUID()
-        let category: String
-        let month: String
-        let amount: Double
-    }
-
     @State private var selectedDate = Date()
-
-    let forecastData = [
-        Forecast(month: "Июнь", amount: 30000),
-        Forecast(month: "Июль", amount: 60000),
-        Forecast(month: "Август", amount: 190000)
-    ]
-
-    let details = [
-        ForecastDetail(category: "Магазины", month: "Июнь", amount: -2500),
-        ForecastDetail(category: "Магазины", month: "Июнь", amount: -2500),
-        ForecastDetail(category: "Магазины", month: "Июнь", amount: -2500)
-    ]
+    @State private var forecastData: [ExpenseForecastItem] = []
+    @EnvironmentObject var transactionStore: TransactionStore
 
     var body: some View {
         ZStack {
@@ -52,29 +29,35 @@ struct ExpenseForecastView: View {
                 }
                 .padding(.top, -30)
 
-                // Диаграмма
-                VStack {
-                    Chart(forecastData) { item in
-                        BarMark(
-                            x: .value("Месяц", item.month),
-                            y: .value("Сумма", item.amount)
-                        )
-                        .foregroundStyle(Color.purple)
-                        .cornerRadius(10)
-                        .annotation(position: .top) {
-                            Text("\(Int(item.amount)).000Р")
-                                .font(.caption)
-                                .foregroundColor(.white)
+                // Диаграмма прогноза
+                if forecastData.isEmpty {
+                    ProgressView("Загрузка...")
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .padding(.top, 50)
+                } else {
+                    VStack {
+                        Chart(forecastData) { item in
+                            BarMark(
+                                x: .value("Месяц", item.month),
+                                y: .value("Сумма", item.amount)
+                            )
+                            .foregroundStyle(Color.purple)
+                            .cornerRadius(10)
+                            .annotation(position: .top) {
+                                Text("\(Int(item.amount))₽")
+                                    .font(.caption)
+                                    .foregroundColor(.white)
+                            }
                         }
+                        .frame(height: 200)
+                        .padding()
+                        .background(Color.black.opacity(0.2))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
                     }
-                    .frame(height: 200)
-                    .padding()
-                    .background(Color.black.opacity(0.2))
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
 
-                // Заголовок + DatePicker
+                // Выбор месяца
                 HStack {
                     Text("Выберите месяц")
                         .font(.headline)
@@ -88,26 +71,27 @@ struct ExpenseForecastView: View {
                 }
                 .padding(.horizontal)
 
-                // Список трат
+                // Последние 3 транзакции (расходы)
                 VStack(spacing: 0) {
-                    ForEach(Array(details.enumerated()), id: \.element.id) { index, detail in
+                    let recentExpenses = transactionStore.transactions.filter { !$0.isIncome }.prefix(3)
+                    ForEach(recentExpenses) { tx in
                         HStack {
                             Image(systemName: "cart.fill")
                                 .foregroundColor(.pink)
                                 .frame(width: 30)
-                            Text(detail.category)
+                            Text(tx.category)
                                 .foregroundColor(.pink)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            Text(detail.month)
+                            Text(tx.date.prefix(7))
                                 .foregroundColor(.gray)
-                            Text("\(Int(detail.amount))₽")
+                            Text("\(Int(tx.amount))₽")
                                 .foregroundColor(.white)
                                 .padding(.leading, 4)
                         }
                         .padding(.vertical, 10)
                         .padding(.horizontal)
 
-                        if index < details.count - 1 {
+                        if tx.id != recentExpenses.last?.id {
                             Divider()
                                 .background(Color.white.opacity(0.1))
                         }
@@ -120,5 +104,34 @@ struct ExpenseForecastView: View {
             }
         }
         .ignoresSafeArea()
+        .onAppear {
+            print("📊 Все транзакции:")
+            for tx in transactionStore.transactions {
+                print("🧾 \(tx.date) | \(tx.amount)₽ | isIncome: \(tx.isIncome) | \(tx.category)")
+            }
+
+            let expensesOnly = transactionStore.transactions.filter { !$0.isIncome }
+            print("📦 Отправляем транзакций: \(expensesOnly.count)")
+            expensesOnly.forEach {
+                print("🧾 \($0.date) — \($0.amount)₽ — \($0.category)")
+            }
+
+            if expensesOnly.isEmpty {
+                print("⚠️ Нет расходов для прогноза")
+                return
+            }
+
+            ForecastService.shared.fetchForecast(transactions: expensesOnly) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let forecast):
+                        self.forecastData = forecast
+                        print("✅ Forecast received:", forecast)
+                    case .failure(let error):
+                        print("❌ Forecast error:", error.localizedDescription)
+                    }
+                }
+            }
+        }
     }
 }

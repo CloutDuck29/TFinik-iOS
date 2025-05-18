@@ -4,6 +4,7 @@ import Charts
 struct ExpenseForecastView: View {
     @State private var selectedMonth: String = ""
     @State private var forecastData: [ExpenseForecastItem] = []
+    @State private var forecastCategories: [ExpenseForecastCategory] = []
     @EnvironmentObject var transactionStore: TransactionStore
 
     var body: some View {
@@ -39,10 +40,10 @@ struct ExpenseForecastView: View {
                         Chart(forecastData) { item in
                             BarMark(
                                 x: .value("Месяц", item.month),
-                                y: .value("Сумма", abs(item.amount))  // используем абсолютное значение, чтобы столбцы росли вверх
+                                y: .value("Сумма", abs(item.amount))
                             )
                             .foregroundStyle(Color.purple)
-                            .cornerRadius(10)  // скругление столбцов
+                            .cornerRadius(10)
                             .annotation(position: .top) {
                                 Text("\(Int(item.amount))₽")
                                     .font(.caption)
@@ -52,12 +53,12 @@ struct ExpenseForecastView: View {
                         .frame(height: 200)
                         .padding()
                         .background(Color.black.opacity(0.2))
-                        .clipShape(RoundedRectangle(cornerRadius: 20))  // скругление фона
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
                     }
                     .padding(.horizontal)
                 }
 
-                // Выбор месяца (Picker вместо DatePicker)
+                // Выбор месяца
                 HStack {
                     Text("Выберите месяц")
                         .font(.headline)
@@ -73,61 +74,51 @@ struct ExpenseForecastView: View {
                         }
                         .pickerStyle(SegmentedPickerStyle())
                         .frame(maxWidth: 300)
+                        .onChange(of: selectedMonth) { newMonth in
+                            loadCategories(for: newMonth)
+                        }
                     }
                 }
                 .padding(.horizontal)
 
-                // Последние 3 транзакции (расходы)
-                VStack(spacing: 0) {
-                    let recentExpenses = transactionStore.transactions.filter { !$0.isIncome }.prefix(3)
-                    ForEach(recentExpenses) { tx in
-                        HStack {
-                            Image(systemName: "cart.fill")
-                                .foregroundColor(.pink)
-                                .frame(width: 30)
-                            Text(tx.category)
-                                .foregroundColor(.pink)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Text(tx.date.prefix(7))
-                                .foregroundColor(.gray)
-                            Text("\(Int(tx.amount))₽")
-                                .foregroundColor(.white)
-                                .padding(.leading, 4)
-                        }
-                        .padding(.vertical, 10)
-                        .padding(.horizontal)
+                // Топ-3 категории для выбранного месяца
+                if forecastCategories.isEmpty {
+                    Text("Загрузка категорий...")
+                        .foregroundColor(.gray)
+                        .padding()
+                } else {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Топ-3 категории трат за \(selectedMonth)")
+                            .foregroundColor(.white)
+                            .font(.headline)
 
-                        if tx.id != recentExpenses.last?.id {
-                            Divider()
-                                .background(Color.white.opacity(0.1))
+                        ForEach(forecastCategories) { cat in
+                            HStack {
+                                Text(cat.category)
+                                    .foregroundColor(.pink)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Text("\(Int(cat.amount))₽")
+                                    .foregroundColor(.white)
+                            }
                         }
                     }
+                    .padding(.horizontal)
+                    .padding(.bottom)
+                    .background(Color.black.opacity(0.2))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .padding(.horizontal)
                 }
-                .background(Color.black.opacity(0.2))
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal)
-                .padding(.bottom)
             }
         }
         .ignoresSafeArea()
         .onAppear {
             if let firstMonth = forecastData.first?.month {
                 selectedMonth = firstMonth
-            }
-
-            print("📊 Все транзакции:")
-            for tx in transactionStore.transactions {
-                print("🧾 \(tx.date) | \(tx.amount)₽ | isIncome: \(tx.isIncome) | \(tx.category)")
+                loadCategories(for: firstMonth)
             }
 
             let expensesOnly = transactionStore.transactions.filter { !$0.isIncome }
-            print("📦 Отправляем транзакций: \(expensesOnly.count)")
-            expensesOnly.forEach {
-                print("🧾 \($0.date) — \($0.amount)₽ — \($0.category)")
-            }
-
             if expensesOnly.isEmpty {
-                print("⚠️ Нет расходов для прогноза")
                 return
             }
 
@@ -138,11 +129,28 @@ struct ExpenseForecastView: View {
                         self.forecastData = forecast
                         if let firstMonth = forecast.first?.month {
                             self.selectedMonth = firstMonth
+                            loadCategories(for: firstMonth)
                         }
-                        print("✅ Forecast received:", forecast)
                     case .failure(let error):
                         print("❌ Forecast error:", error.localizedDescription)
                     }
+                }
+            }
+        }
+    }
+
+    private func loadCategories(for month: String) {
+        let expensesOnly = transactionStore.transactions.filter { !$0.isIncome }
+        if expensesOnly.isEmpty { return }
+
+        ForecastService.shared.fetchCategoryForecast(month: month, transactions: Array(expensesOnly)) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let categories):
+                    self.forecastCategories = categories
+                case .failure(let error):
+                    print("❌ Category forecast error:", error.localizedDescription)
+                    self.forecastCategories = []
                 }
             }
         }

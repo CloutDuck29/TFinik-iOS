@@ -2,7 +2,7 @@ import SwiftUI
 import Charts
 
 struct ExpenseForecastView: View {
-    @State private var selectedDate = Date()
+    @State private var selectedMonth: String = ""
     @State private var forecastData: [ExpenseForecastItem] = []
     @EnvironmentObject var transactionStore: TransactionStore
 
@@ -39,9 +39,10 @@ struct ExpenseForecastView: View {
                         Chart(forecastData) { item in
                             BarMark(
                                 x: .value("Месяц", item.month),
-                                y: .value("Сумма", abs(item.amount))  // берём абсолютное значение
+                                y: .value("Сумма", abs(item.amount))  // используем абсолютное значение, чтобы столбцы росли вверх
                             )
                             .foregroundStyle(Color.purple)
+                            .cornerRadius(10)  // скругление столбцов
                             .annotation(position: .top) {
                                 Text("\(Int(item.amount))₽")
                                     .font(.caption)
@@ -51,12 +52,12 @@ struct ExpenseForecastView: View {
                         .frame(height: 200)
                         .padding()
                         .background(Color.black.opacity(0.2))
-                        .clipShape(RoundedRectangle(cornerRadius: 20))  // скругление только фона
+                        .clipShape(RoundedRectangle(cornerRadius: 20))  // скругление фона
                     }
                     .padding(.horizontal)
                 }
 
-                // Выбор месяца
+                // Выбор месяца (Picker вместо DatePicker)
                 HStack {
                     Text("Выберите месяц")
                         .font(.headline)
@@ -64,9 +65,15 @@ struct ExpenseForecastView: View {
 
                     Spacer()
 
-                    DatePicker("", selection: $selectedDate, displayedComponents: [.date])
-                        .datePickerStyle(.compact)
-                        .labelsHidden()
+                    if !forecastData.isEmpty {
+                        Picker("Выберите месяц", selection: $selectedMonth) {
+                            ForEach(forecastData.map { $0.month }, id: \.self) { month in
+                                Text(month).tag(month)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(maxWidth: 300)
+                    }
                 }
                 .padding(.horizontal)
 
@@ -104,6 +111,10 @@ struct ExpenseForecastView: View {
         }
         .ignoresSafeArea()
         .onAppear {
+            if let firstMonth = forecastData.first?.month {
+                selectedMonth = firstMonth
+            }
+
             print("📊 Все транзакции:")
             for tx in transactionStore.transactions {
                 print("🧾 \(tx.date) | \(tx.amount)₽ | isIncome: \(tx.isIncome) | \(tx.category)")
@@ -125,6 +136,9 @@ struct ExpenseForecastView: View {
                     switch result {
                     case .success(let forecast):
                         self.forecastData = forecast
+                        if let firstMonth = forecast.first?.month {
+                            self.selectedMonth = firstMonth
+                        }
                         print("✅ Forecast received:", forecast)
                     case .failure(let error):
                         print("❌ Forecast error:", error.localizedDescription)

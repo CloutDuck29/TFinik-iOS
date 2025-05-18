@@ -22,7 +22,6 @@ struct TransactionForForecast: Codable {
     }
 }
 
-
 // MARK: - Обёртка запроса
 struct ForecastPayload: Codable {
     let transactions: [TransactionForForecast]

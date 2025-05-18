@@ -39,10 +39,9 @@ struct ExpenseForecastView: View {
                         Chart(forecastData) { item in
                             BarMark(
                                 x: .value("Месяц", item.month),
-                                y: .value("Сумма", item.amount)
+                                y: .value("Сумма", abs(item.amount))  // берём абсолютное значение
                             )
                             .foregroundStyle(Color.purple)
-                            .cornerRadius(10)
                             .annotation(position: .top) {
                                 Text("\(Int(item.amount))₽")
                                     .font(.caption)
@@ -52,7 +51,7 @@ struct ExpenseForecastView: View {
                         .frame(height: 200)
                         .padding()
                         .background(Color.black.opacity(0.2))
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))  // скругление только фона
                     }
                     .padding(.horizontal)
                 }

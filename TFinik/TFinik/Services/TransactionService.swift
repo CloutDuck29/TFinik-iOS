@@ -34,7 +34,7 @@ final class TransactionService {
         body.append(fileData)
         body.append("\r\n--\(boundary)--\r\n")
 
-        URLSession.shared.uploadTask(with: request, from: body) { data, _, error in
+        let task = URLSession.shared.uploadTask(with: request, from: body) { data, _, error in
             if let error = error {
                 completion(.failure(error))
                 return
@@ -61,11 +61,22 @@ final class TransactionService {
                 }
                 completion(.success(transactions))
             } catch {
-                print("❌ Ошибка декодирования JSON: \(error)")
-                completion(.failure(error))
+                // Пробуем декодировать {"detail": "..."}
+                if let errorResponse = try? JSONDecoder().decode([String: String].self, from: data),
+                   let message = errorResponse["detail"] {
+                    print("❌ Сервер вернул ошибку: \(message)")
+                    let serverError = NSError(domain: "Server", code: 400, userInfo: [NSLocalizedDescriptionKey: message])
+                    completion(.failure(serverError))
+                } else {
+                    print("❌ Ошибка декодирования JSON: \(error)")
+                    completion(.failure(error))
+                }
             }
-        }.resume()
+        }
+
+        task.resume()
     }
+
 
     // Обновление категории транзакции
     func updateCategory(transactionID: Int, to newCategory: String, token: String) {

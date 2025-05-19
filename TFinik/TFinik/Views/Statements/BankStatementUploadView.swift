@@ -15,6 +15,8 @@ struct BankStatementUploadView: View {
     @State private var showingDocumentPickerForBank: BankWrapper? = nil
     @State private var showAlert = false
     @State private var showPreview = false
+    @State private var isUploading = false
+
 
     private let supportedBanks = ["Tinkoff", "Sber", "Alfa", "VTB"]
 
@@ -120,10 +122,13 @@ struct BankStatementUploadView: View {
     }
 
     private func handleUpload() {
+        guard !isUploading else { return } // защита от повторов
         guard !selectedFiles.isEmpty else {
             showAlert = true
             return
         }
+
+        isUploading = true // старт блокировки
 
         transactionStore.clear()
         var completed = 0
@@ -139,10 +144,12 @@ struct BankStatementUploadView: View {
                     case .success(let txs):
                         allTransactions.append(contentsOf: txs)
                     case .failure(let error):
-                        print("❌ Ошибка при загрузке \(bank): \(error)")
+                        print("❌ Ошибка при загрузке \(bank): \(error.localizedDescription)")
+                        // (опционально) можно показать алерт
                     }
 
                     if completed == total {
+                        isUploading = false // ✅ сбрасываем после всех запросов
                         transactionStore.transactions = allTransactions
                         if !allTransactions.isEmpty {
                             showPreview = true
@@ -152,6 +159,7 @@ struct BankStatementUploadView: View {
             }
         }
     }
+
 
     private func bankIconName(for bank: String) -> String {
         switch bank {

@@ -6,6 +6,7 @@ struct ExpenseForecastView: View {
     @State private var forecastData: [ExpenseForecastItem] = []
     @State private var forecastCategories: [ExpenseForecastCategory] = []
     @EnvironmentObject var transactionStore: TransactionStore
+    @State private var forecastErrorMessage: String? = nil
 
     var body: some View {
         ZStack {
@@ -30,8 +31,23 @@ struct ExpenseForecastView: View {
                 }
                 .padding(.top, -30)
 
-                // Диаграмма прогноза
-                if forecastData.isEmpty {
+                // Диаграмма или ошибка
+                if let errorMessage = forecastErrorMessage {
+                    VStack(spacing: 12) {
+                        Text("⚠️ \(errorMessage)")
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 50)
+
+                        Button("Повторить попытку") {
+                            loadForecast()
+                        }
+                        .padding(10)
+                        .background(Color.purple)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                    }
+                } else if forecastData.isEmpty {
                     ProgressView("Загрузка...")
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .padding(.top, 50)
@@ -59,14 +75,14 @@ struct ExpenseForecastView: View {
                 }
 
                 // Выбор месяца
-                HStack {
-                    Text("Выберите месяц")
-                        .font(.headline)
-                        .foregroundColor(.white)
+                if forecastErrorMessage == nil && !forecastData.isEmpty {
+                    HStack {
+                        Text("Выберите месяц")
+                            .font(.headline)
+                            .foregroundColor(.white)
 
-                    Spacer()
+                        Spacer()
 
-                    if !forecastData.isEmpty {
                         Picker("Выберите месяц", selection: $selectedMonth) {
                             ForEach(forecastData.map { $0.month }, id: \.self) { month in
                                 Text(month).tag(month)
@@ -78,61 +94,78 @@ struct ExpenseForecastView: View {
                             loadCategories(for: newMonth)
                         }
                     }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
 
-                // Топ-3 категории для выбранного месяца
-                if forecastCategories.isEmpty {
-                    Text("Загрузка категорий...")
-                        .foregroundColor(.gray)
-                        .padding()
-                } else {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Топ-3 категории трат за \(selectedMonth)")
-                            .foregroundColor(.white)
-                            .font(.headline)
+                // Категории
+                if forecastErrorMessage == nil {
+                    if forecastCategories.isEmpty && !forecastData.isEmpty {
+                        Text("Загрузка категорий...")
+                            .foregroundColor(.gray)
+                            .padding()
+                    } else {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Топ-3 категории трат за \(selectedMonth)")
+                                .foregroundColor(.white)
+                                .font(.headline)
+                                .padding(.top, 16) // 👈 вот этот отступ внутрь плашки
 
-                        ForEach(forecastCategories) { cat in
-                            HStack {
-                                Text(cat.category)
-                                    .foregroundColor(.pink)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Text("\(Int(cat.amount))₽")
-                                    .foregroundColor(.white)
+                            ForEach(forecastCategories) { cat in
+                                HStack {
+                                    Text(cat.category)
+                                        .foregroundColor(.pink)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Text("\(Int(cat.amount))₽")
+                                        .foregroundColor(.white)
+                                }
                             }
                         }
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                        .background(Color.black.opacity(0.2))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
-                    .padding(.bottom)
-                    .background(Color.black.opacity(0.2))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .padding(.horizontal)
                 }
             }
         }
         .ignoresSafeArea()
         .onAppear {
-            if let firstMonth = forecastData.first?.month {
-                selectedMonth = firstMonth
-                loadCategories(for: firstMonth)
-            }
+            loadForecast()
+        }
+    }
 
-            let expensesOnly = transactionStore.transactions.filter { !$0.isIncome }
-            if expensesOnly.isEmpty {
-                return
-            }
+    private func loadForecast() {
+        let expensesOnly = transactionStore.transactions.filter { !$0.isIncome }
+        if expensesOnly.isEmpty {
+            self.forecastErrorMessage = "Нет расходов для анализа"
+            return
+        }
 
-            ForecastService.shared.fetchForecast(transactions: expensesOnly) { result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let forecast):
-                        self.forecastData = forecast
-                        if let firstMonth = forecast.first?.month {
-                            self.selectedMonth = firstMonth
-                            loadCategories(for: firstMonth)
-                        }
-                    case .failure(let error):
-                        print("❌ Forecast error:", error.localizedDescription)
+        self.forecastErrorMessage = nil
+        self.forecastData = []
+        self.forecastCategories = []
+
+        ForecastService.shared.fetchForecast(transactions: expensesOnly) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let forecast):
+                    self.forecastData = forecast
+                    if let firstMonth = forecast.first?.month {
+                        self.selectedMonth = firstMonth
+                        loadCategories(for: firstMonth)
+                    }
+                case .failure(let error):
+                    print("❌ Forecast error:", error.localizedDescription)
+
+                    if let nsError = error as NSError?,
+                       let detail = (nsError.userInfo[NSLocalizedDescriptionKey] as? String)?
+                           .data(using: .utf8)
+                           .flatMap({ try? JSONSerialization.jsonObject(with: $0) }) as? [String: String],
+                       let message = detail["detail"] {
+                        self.forecastErrorMessage = message
+                    } else {
+                        self.forecastErrorMessage = "Ошибка прогноза"
                     }
                 }
             }

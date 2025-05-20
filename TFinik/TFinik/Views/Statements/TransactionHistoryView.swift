@@ -10,7 +10,6 @@ struct TransactionHistoryView: View {
     @State private var isLoading = true
     @State private var selectedCategory: String? = nil
     @State private var selectedYearMonth: String? = nil
-
     @State private var filteredTransactions: [Transaction] = []
     @State private var totalAmount: Double = 0
     @State private var allYearMonths: [String] = []
@@ -64,7 +63,7 @@ struct TransactionHistoryView: View {
         HStack {
             Text("📝")
                 .font(.system(size: 32))
-            Text("История трат")
+            Text("История операций")
                 .font(.title2.bold())
                 .foregroundColor(.white)
         }
@@ -138,38 +137,32 @@ struct TransactionHistoryView: View {
     }
 
     func applyFilters() {
-        if store.transactions.isEmpty {
-            Task {
-                isLoading = true
-                await store.fetchTransactions()
-                allYearMonths = uniqueYearMonths()
-                isLoading = false
-                applyFilters()
-            }
-            return
-        }
-
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "LLLL yyyy"
-
         print("📌 selectedYM: \(selectedYearMonth ?? "nil")")
+        print("📦 Всего загружено транзакций: \(store.transactions.count)")
+
+        var selectedYear: Int? = nil
+        var selectedMonth: Int? = nil
+        if let ym = selectedYearMonth {
+            let parts = ym.split(separator: "-").compactMap { Int($0) }
+            if parts.count == 2 {
+                selectedYear = parts[0]
+                selectedMonth = parts[1]
+            }
+        }
 
         filteredTransactions = store.transactions
             .filter { tx in
-                guard !tx.isIncome, tx.category != "Пополнение" else { return false }
-
                 let matchCategory = selectedCategory == nil || tx.category == selectedCategory
 
                 let matchYM: Bool = {
-                    guard let ym = selectedYearMonth,
-                          let date = parseDate(tx.date) else {
-                        print("⚠️ Ошибка парсинга даты: \(tx.date)")
-                        return true
+                    guard let date = parseDate(tx.date) else {
+                        return false
                     }
-
-                    let formatted = formatter.string(from: date).capitalized
-                    return formatted.lowercased() == ym.lowercased()
+                    if let year = selectedYear, let month = selectedMonth {
+                        let comps = Calendar.current.dateComponents([.year, .month], from: date)
+                        return comps.year == year && comps.month == month
+                    }
+                    return true
                 }()
 
                 return matchCategory && matchYM
@@ -185,54 +178,47 @@ struct TransactionHistoryView: View {
     }
 
     func uniqueYearMonths() -> [String] {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "LLLL yyyy"
-
-        let sortedDates = store.transactions
-            .filter { !$0.isIncome && $0.category != "Пополнение" }
+        let dates = store.transactions
             .compactMap { parseDate($0.date) }
             .sorted(by: >)
 
         var seen: Set<String> = []
         var result: [String] = []
 
-        for date in sortedDates {
-            let ym = formatter.string(from: date).capitalized
-            if !seen.contains(ym) {
-                seen.insert(ym)
+        for date in dates {
+            let comps = Calendar.current.dateComponents([.year, .month], from: date)
+            let ym = String(format: "%04d-%02d", comps.year ?? 0, comps.month ?? 0)
+            if seen.insert(ym).inserted {
                 result.append(ym)
             }
         }
 
+        print("📅 Найдено месяцев: \(result)")
         return result
     }
 
+
     func uniqueCategories() -> [String] {
-        Array(Set(
-            store.transactions
-                .filter { !$0.isIncome && $0.category != "Пополнение" }
-                .map { $0.category }
-        )).sorted()
+        Array(Set(store.transactions.map { $0.category })).sorted()
     }
 
     func parseDate(_ string: String?) -> Date? {
-        guard let string = string?.trimmingCharacters(in: .whitespacesAndNewlines) else { return nil }
+        guard let raw = string?.trimmingCharacters(in: .whitespacesAndNewlines) else { return nil }
 
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.timeZone = TimeZone.current
 
-        if let date = formatter.date(from: string) {
-            return date
+        for format in ["yyyy-MM-dd", "yyyy-MM-dd'T'HH:mm:ss"] {
+            formatter.dateFormat = format
+            if let date = formatter.date(from: raw) { return date }
         }
 
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withFullDate]
-        isoFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-
-        return isoFormatter.date(from: string)
+        let parts = raw.split(separator: "-").compactMap { Int($0) }
+        if parts.count == 3 {
+            return Calendar.current.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
+        }
+        return nil
     }
 
     func transactionCard(_ tx: Transaction) -> some View {
@@ -244,7 +230,6 @@ struct TransactionHistoryView: View {
                 Image(systemName: iconName(for: tx.category))
                     .foregroundColor(iconColor(for: tx.category))
             }
-
             VStack(alignment: .leading) {
                 Text(tx.description)
                     .lineLimit(1)
@@ -255,9 +240,7 @@ struct TransactionHistoryView: View {
                     .font(.caption)
                     .foregroundColor(.gray)
             }
-
             Spacer()
-
             VStack(alignment: .trailing) {
                 Text(tx.date)
                     .font(.caption)
@@ -301,7 +284,6 @@ struct TransactionHistoryView: View {
 
 struct EmojiLabelStyle: LabelStyle {
     let emoji: String
-
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 4) {
             Text(emoji)

@@ -16,7 +16,7 @@ struct BankStatementUploadView: View {
     @State private var showAlert = false
     @State private var showPreview = false
     @State private var isUploading = false
-    @State private var showFormatAlert = false  // 🔥 Новый алерт
+    @State private var showFormatAlert = false
 
     private let supportedBanks = ["Tinkoff", "Sber"]
 
@@ -25,6 +25,21 @@ struct BankStatementUploadView: View {
             BackgroundView()
             content
             navigationLink
+
+            if isUploading {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+
+                VStack(spacing: 16) {
+                    ProgressView("Загрузка выписки...")
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .foregroundColor(.white)
+                        .font(.headline)
+                }
+                .padding()
+                .background(Color.black.opacity(0.7))
+                .cornerRadius(16)
+            }
         }
         .alert(isPresented: $showAlert) {
             Alert(
@@ -79,7 +94,7 @@ struct BankStatementUploadView: View {
             Text("(нажмите на иконку для загрузки)")
                 .font(.caption)
                 .foregroundColor(.gray)
-                .padding(.bottom, 12) // ✅ Отступ
+                .padding(.bottom, 12)
 
             LazyVGrid(columns: [GridItem(), GridItem()], spacing: 20) {
                 ForEach(supportedBanks, id: \.self) { bank in
@@ -158,7 +173,6 @@ struct BankStatementUploadView: View {
                             showFormatAlert = true
                         }
                     }
-
 
                     if completed == total {
                         isUploading = false

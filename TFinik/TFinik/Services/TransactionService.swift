@@ -174,16 +174,26 @@ final class TransactionService {
                 return
             }
 
-            if let httpResponse = response as? HTTPURLResponse {
-                if httpResponse.statusCode == 400 {
-                    completion(.failure(URLError(.badServerResponse)))
-                    return
-                }
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(NSError(domain: "No response", code: -1)))
+                return
+            }
+
+            if !(200...299).contains(httpResponse.statusCode) {
+                let serverMessage = String(data: data ?? Data(), encoding: .utf8) ?? "Unknown error"
+                let error = NSError(
+                    domain: "ServerError",
+                    code: httpResponse.statusCode,
+                    userInfo: [NSLocalizedDescriptionKey: serverMessage]
+                )
+                completion(.failure(error))
+                return
             }
 
             completion(.success(()))
         }.resume()
     }
+
 
     
     // Получение всех выписок

@@ -19,6 +19,9 @@ struct BankUploadView: View {
     @State private var showDuplicateAlert = false
     @State private var isLoading = false
     @State private var showSuccessAlert = false
+    @State private var showFormatAlert = false  // ✅ Новый алерт
+
+    let supportedBanks = ["Тинькофф", "Сбер"]
 
     var body: some View {
         ZStack {
@@ -48,6 +51,23 @@ struct BankUploadView: View {
                 } else {
                     ScrollView {
                         VStack(spacing: 24) {
+                            // Кнопки для загрузки недостающих банков
+                            ForEach(supportedBanks, id: \.self) { bank in
+                                Button(action: {
+                                    selectedBank = bank
+                                    isFileImporterPresented = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "plus.circle")
+                                        Text("Загрузить выписку для \(bank)")
+                                    }
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.white.opacity(0.1))
+                                    .cornerRadius(12)
+                                }
+                            }
+
                             ForEach(entries) { entry in
                                 BankUploadCard(entry: entry, onUpload: {
                                     selectedBank = entry.bankName
@@ -68,23 +88,41 @@ struct BankUploadView: View {
                 switch result {
                 case .success(let urls):
                     if let url = urls.first, let bank = selectedBank {
+                        let normalizedBank = bank.lowercased() == "тинькофф" ? "tinkoff" :
+                                             bank.lowercased() == "сбер" ? "sber" : bank.lowercased()
+
                         isLoading = true
-                        TransactionService.shared.uploadStatementSimple(fileURL: url, bank: bank, token: auth.accessToken ?? "") { result in
+                        TransactionService.shared.uploadStatementSimple(fileURL: url, bank: normalizedBank, token: auth.accessToken ?? "") { result in
                             DispatchQueue.main.async {
                                 isLoading = false
                                 switch result {
                                 case .success:
                                     showSuccessAlert = true
+
+                                    if !entries.contains(where: { $0.bankName == bank }) {
+                                        entries.append(
+                                            BankUploadEntry(
+                                                bankName: bank,
+                                                logoName: "\(bank.lowercased())_icon",
+                                                years: []
+                                            )
+                                        )
+                                    }
+
                                     fetchStatements()
                                 case .failure(let error):
-                                    if let urlError = error as? URLError, urlError.code == .badServerResponse {
+                                    let message = error.localizedDescription.lowercased()
+                                    if message.contains("не является выпиской") || message.contains("unsupported") {
+                                        showFormatAlert = true
+                                    } else if message.contains("уже загружена") || message.contains("duplicate") {
                                         showDuplicateAlert = true
+                                    } else {
+                                        print("❌ Необработанная ошибка: \(message)")
                                     }
                                     print("❌ Ошибка при загрузке: \(error.localizedDescription)")
                                 }
                             }
                         }
-
                     }
                 case .failure(let error):
                     print("Ошибка загрузки файла: \(error.localizedDescription)")
@@ -96,6 +134,9 @@ struct BankUploadView: View {
         }
         .alert("✅ Выписка успешно загружена", isPresented: $showSuccessAlert) {
             Button("Ок", role: .cancel) { }
+        }
+        .alert("❌ Вы загружаете выписку другого банка", isPresented: $showFormatAlert) {
+            Button("Понял", role: .cancel) { }
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -120,7 +161,7 @@ struct BankUploadView: View {
     }
 
     func processStatements(_ statements: [Statement]) -> [BankUploadEntry] {
-        let grouped = Dictionary(grouping: statements, by: { $0.bank })
+        let grouped = Dictionary(grouping: statements, by: { $0.bank.lowercased() }) // 🔁 нормализуем ключ
         var result: [BankUploadEntry] = []
 
         for (bank, stmts) in grouped {
@@ -138,12 +179,22 @@ struct BankUploadView: View {
                 }
             }
 
-            let years = yearMap.map { YearChunk(year: $0.key, months: $0.value) }.sorted { $0.year < $1.year }
-            result.append(BankUploadEntry(bankName: bank, logoName: "\(bank.lowercased())_icon", years: years))
+            // Красивое отображение
+            let displayBank = bank == "tinkoff" ? "Tinkoff" :
+                              bank == "sber" ? "Сбер" : bank.capitalized
+
+            result.append(
+                BankUploadEntry(
+                    bankName: displayBank,
+                    logoName: "\(bank.lowercased())_icon",
+                    years: yearMap.map { YearChunk(year: $0.key, months: $0.value) }.sorted { $0.year < $1.year }
+                )
+            )
         }
 
         return result
     }
+
 }
 
 struct BankUploadCard: View {
@@ -169,7 +220,7 @@ struct BankUploadCard: View {
                         .foregroundColor(.white)
 
                     LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 6), spacing: 8) {
-                        ForEach(1...12, id: \ .self) { month in
+                        ForEach(1...12, id: \.self) { month in
                             let isUploaded = chunk.months[month] ?? false
                             Text(threeLetterMonthName(month))
                                 .font(.caption2)
@@ -181,9 +232,6 @@ struct BankUploadCard: View {
                     }
                 }
             }
-
-            Button("➕ Загрузить выписку", action: onUpload)
-                .padding(.top, 8)
         }
         .padding()
         .background(Color.white.opacity(0.12))

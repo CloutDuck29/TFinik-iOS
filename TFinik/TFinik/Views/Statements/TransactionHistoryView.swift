@@ -126,15 +126,28 @@ struct TransactionHistoryView: View {
     func loadData() {
         Task {
             isLoading = true
+
+            // 1. Загружаем транзакции
             await store.fetchTransactions()
+
+            // 2. Обновляем список доступных месяцев
             allYearMonths = uniqueYearMonths()
-            if selectedYearMonth == nil {
-                selectedYearMonth = allYearMonths.first
+
+            // 3. Обновляем выбранный месяц ПРИНУДИТЕЛЬНО
+            if let first = allYearMonths.first {
+                selectedYearMonth = first
+            } else {
+                selectedYearMonth = nil
             }
+
+            // 4. Применяем фильтрацию уже с актуальными значениями
             applyFilters()
             isLoading = false
         }
     }
+
+
+
 
     func applyFilters() {
         print("📌 selectedYM: \(selectedYearMonth ?? "nil")")
@@ -172,7 +185,9 @@ struct TransactionHistoryView: View {
                 return d1 > d2
             }
 
-        totalAmount = filteredTransactions.reduce(0) { $0 + $1.amount }
+        totalAmount = filteredTransactions
+            .filter { $0.amount < 0 }
+            .reduce(0) { $0 + $1.amount }
 
         print("✅ Результат: \(filteredTransactions.count) транзакций")
     }

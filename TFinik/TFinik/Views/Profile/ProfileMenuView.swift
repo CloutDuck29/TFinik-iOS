@@ -41,16 +41,23 @@ struct ProfileMenuView: View {
             .navigationDestination(item: $destination) { dest in
                 switch dest {
                 case .statements:
-                    BankUploadView().environmentObject(auth)
+                    BankUploadView()
+                        .environmentObject(auth)
+                        .environmentObject(transactionStore) // ✅ Добавить это
+
                 case .advice:
                     FinanceAdviceView()
+
                 case .forecast:
                     ExpenseForecastView()
                         .environmentObject(transactionStore)
+
                 case .portrait:
-                    MonthPortraitView().environmentObject(auth)
+                    MonthPortraitView()
+                        .environmentObject(auth)
                 }
             }
+
         }
         .onAppear {
             Task {
@@ -61,7 +68,7 @@ struct ProfileMenuView: View {
 
     private var cards: [ProfileCardData] {
         [
-            .init(icon: "🎯", label: "Выписки", destination: .statements),
+            .init(icon: "📝", label: "Выписки", destination: .statements),
             .init(icon: "🔥", label: "Советы", destination: .advice),
             .init(icon: "🛠", label: "Прогноз", destination: .forecast),
             .init(icon: "😁", label: "Портрет", destination: .portrait)

@@ -18,7 +18,7 @@ struct BankStatementUploadView: View {
     @State private var isUploading = false
 
 
-    private let supportedBanks = ["Tinkoff", "Sber", "Alfa", "VTB"]
+    private let supportedBanks = ["Tinkoff", "Sber"]
 
     var body: some View {
         ZStack {
@@ -76,6 +76,7 @@ struct BankStatementUploadView: View {
             Text("(нажмите на иконку для загрузки)")
                 .font(.caption)
                 .foregroundColor(.gray)
+                .padding(.bottom, 12) // ✅ Добавлен отступ вниз
 
             LazyVGrid(columns: [GridItem(), GridItem()], spacing: 20) {
                 ForEach(supportedBanks, id: \.self) { bank in
@@ -98,6 +99,7 @@ struct BankStatementUploadView: View {
             }
         }
     }
+
 
     private func nextButtonView() -> some View {
         Button("Далее →") {

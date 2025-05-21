@@ -1,4 +1,4 @@
-// MARK: Дозагрузка последующих выписок
+// MARK: Дозагрузка последующих выписок + Предпросмотр транзакций
 
 import SwiftUI
 import UniformTypeIdentifiers
@@ -13,13 +13,16 @@ struct BankUploadEntry: Identifiable {
 
 struct BankUploadView: View {
     @EnvironmentObject var auth: AuthService
+    @EnvironmentObject var transactionStore: TransactionStore
+    
     @State private var entries: [BankUploadEntry] = []
     @State private var selectedBank: String?
     @State private var isFileImporterPresented = false
     @State private var showDuplicateAlert = false
     @State private var isLoading = false
     @State private var showSuccessAlert = false
-    @State private var showFormatAlert = false  // ✅ Новый алерт
+    @State private var showFormatAlert = false
+    @State private var showTransactionPreview = false
 
     let supportedBanks = ["Тинькофф", "Сбер"]
 
@@ -37,6 +40,21 @@ struct BankUploadView: View {
                 }
                 .padding(.top, 40)
 
+                Button(action: {
+                    showTransactionPreview = true
+                }) {
+                    HStack {
+                        Image(systemName: "doc.text.magnifyingglass")
+                        Text("Предпросмотр транзакций")
+                            .fontWeight(.medium)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white.opacity(0.1))
+                    .cornerRadius(12)
+                    .foregroundColor(.white)
+                }
+
                 if isLoading {
                     Spacer()
                     ProgressView("Загрузка...")
@@ -51,7 +69,6 @@ struct BankUploadView: View {
                 } else {
                     ScrollView {
                         VStack(spacing: 24) {
-                            // Кнопки для загрузки недостающих банков
                             ForEach(supportedBanks, id: \.self) { bank in
                                 Button(action: {
                                     selectedBank = bank
@@ -138,6 +155,10 @@ struct BankUploadView: View {
         .alert("❌ Вы загружаете выписку другого банка", isPresented: $showFormatAlert) {
             Button("Понял", role: .cancel) { }
         }
+        .sheet(isPresented: $showTransactionPreview) {
+            TransactionPreviewView()
+                .environmentObject(transactionStore)
+        }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 fetchStatements()
@@ -161,7 +182,7 @@ struct BankUploadView: View {
     }
 
     func processStatements(_ statements: [Statement]) -> [BankUploadEntry] {
-        let grouped = Dictionary(grouping: statements, by: { $0.bank.lowercased() }) // 🔁 нормализуем ключ
+        let grouped = Dictionary(grouping: statements, by: { $0.bank.lowercased() })
         var result: [BankUploadEntry] = []
 
         for (bank, stmts) in grouped {
@@ -179,7 +200,6 @@ struct BankUploadView: View {
                 }
             }
 
-            // Красивое отображение
             let displayBank = bank == "tinkoff" ? "Tinkoff" :
                               bank == "sber" ? "Сбер" : bank.capitalized
 
@@ -194,7 +214,6 @@ struct BankUploadView: View {
 
         return result
     }
-
 }
 
 struct BankUploadCard: View {

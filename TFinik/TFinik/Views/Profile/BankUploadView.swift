@@ -127,15 +127,27 @@ struct BankUploadView: View {
                                     }
 
                                     fetchStatements()
+
                                 case .failure(let error):
+                                    print("❌ Ошибка при загрузке: \(error.localizedDescription)")
+
+                                    // Универсальная проверка
                                     let message = error.localizedDescription.lowercased()
-                                    if message.contains("не является выпиской") || message.contains("unsupported") {
+                                    print("🧪 Получена ошибка: \(message)")
+
+                                    if message.contains("не является выпиской") ||
+                                       message.contains("unsupported") ||
+                                       message.contains("другой банк") ||
+                                       message.contains("tinkoff") ||
+                                       message.contains("т-банк") {
                                         showFormatAlert = true
                                     } else if message.contains("уже загружена") || message.contains("duplicate") {
                                         showDuplicateAlert = true
                                     } else {
-                                        print("❌ Необработанная ошибка: \(message)")
+                                        showFormatAlert = true // на всякий случай
                                     }
+
+
                                     print("❌ Ошибка при загрузке: \(error.localizedDescription)")
                                 }
                             }
@@ -145,6 +157,7 @@ struct BankUploadView: View {
                     print("Ошибка загрузки файла: \(error.localizedDescription)")
                 }
             }
+
         }
         .alert("⚠️ Такая выписка уже загружена", isPresented: $showDuplicateAlert) {
             Button("Ок", role: .cancel) { }

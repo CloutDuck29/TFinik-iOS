@@ -80,7 +80,7 @@ final class TransactionService {
 
     // Обновление категории транзакции
     func updateCategory(transactionID: Int, to category: String, token: String, completion: ((Result<Void, Error>) -> Void)? = nil) {
-        guard let url = URL(string: "http://10.255.255.239:8000/transactions/\(transactionID)/category") else {
+        guard let url = URL(string: "http://10.255.255.239:8000/transactions/\(transactionID)") else {
             completion?(.failure(URLError(.badURL)))
             return
         }

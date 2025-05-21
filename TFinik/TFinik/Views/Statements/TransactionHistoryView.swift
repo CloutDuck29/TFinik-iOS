@@ -1,9 +1,5 @@
 import SwiftUI
 
-struct TransactionHistoryResponse: Codable {
-    let transactions: [Transaction]
-}
-
 struct TransactionHistoryView: View {
     @EnvironmentObject var store: TransactionStore
 
@@ -71,46 +67,35 @@ struct TransactionHistoryView: View {
 
     var filters: some View {
         HStack(spacing: 12) {
-            Menu {
-                Button("Все месяцы") {
-                    selectedYearMonth = nil
+            Picker("📅", selection: $selectedYearMonth.onChange { newYM in
+                Task {
+                    isLoading = true
+                    await store.fetchTransactions()
                     applyFilters()
+                    isLoading = false
                 }
+            }) {
+                Text("Все месяцы").tag(String?.none)
                 ForEach(allYearMonths, id: \.self) { ym in
-                    Button(ym) {
-                        selectedYearMonth = ym
-                        applyFilters()
-                    }
+                    Text(ym).tag(String?.some(ym))
                 }
-            } label: {
-                Label(selectedYearMonth ?? "Месяц", image: "")
-                    .labelStyle(EmojiLabelStyle(emoji: "📅"))
             }
+            .pickerStyle(MenuPickerStyle())
+            .foregroundColor(.gray)
 
-            Menu {
-                Button("Все категории") {
-                    selectedCategory = nil
-                    applyFilters()
-                }
+            Picker("🗂", selection: $selectedCategory.onChange { _ in applyFilters() }) {
+                Text("Все категории").tag(String?.none)
                 ForEach(uniqueCategories(), id: \.self) { category in
-                    Button(category) {
-                        selectedCategory = category
-                        applyFilters()
-                    }
+                    Text(category).tag(String?.some(category))
                 }
-            } label: {
-                Label(selectedCategory ?? "Категория", image: "")
-                    .labelStyle(EmojiLabelStyle(emoji: "🗂"))
             }
+            .pickerStyle(MenuPickerStyle())
+            .foregroundColor(.gray)
 
             Button("↺") {
                 selectedCategory = nil
                 selectedYearMonth = nil
-                if store.transactions.isEmpty {
-                    loadData()
-                } else {
-                    applyFilters()
-                }
+                loadData()
             }
             .font(.headline)
             .foregroundColor(.white)
@@ -120,34 +105,22 @@ struct TransactionHistoryView: View {
             .cornerRadius(8)
         }
         .font(.footnote)
-        .foregroundColor(.gray)
     }
 
     func loadData() {
+        isLoading = true
         Task {
-            isLoading = true
-
-            // 1. Загружаем транзакции
             await store.fetchTransactions()
-
-            // 2. Обновляем список доступных месяцев
             allYearMonths = uniqueYearMonths()
-
-            // 3. Обновляем выбранный месяц ПРИНУДИТЕЛЬНО
-            if let first = allYearMonths.first {
-                selectedYearMonth = first
-            } else {
-                selectedYearMonth = nil
-            }
-
-            // 4. Применяем фильтрацию уже с актуальными значениями
+            let currentYM = {
+                let comps = Calendar.current.dateComponents([.year, .month], from: Date())
+                return String(format: "%04d-%02d", comps.year ?? 0, comps.month ?? 0)
+            }()
+            selectedYearMonth = allYearMonths.contains(currentYM) ? currentYM : allYearMonths.first
             applyFilters()
             isLoading = false
         }
     }
-
-
-
 
     func applyFilters() {
         print("📌 selectedYM: \(selectedYearMonth ?? "nil")")
@@ -208,10 +181,8 @@ struct TransactionHistoryView: View {
             }
         }
 
-        print("📅 Найдено месяцев: \(result)")
         return result
     }
-
 
     func uniqueCategories() -> [String] {
         Array(Set(store.transactions.map { $0.category })).sorted()
@@ -224,15 +195,11 @@ struct TransactionHistoryView: View {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone.current
 
-        for format in ["yyyy-MM-dd", "yyyy-MM-dd'T'HH:mm:ss"] {
+        for format in ["yyyy-MM-dd", "yyyy-MM-dd'T'HH:mm:ss", "dd.MM.yyyy"] {
             formatter.dateFormat = format
             if let date = formatter.date(from: raw) { return date }
         }
 
-        let parts = raw.split(separator: "-").compactMap { Int($0) }
-        if parts.count == 3 {
-            return Calendar.current.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
-        }
         return nil
     }
 
@@ -297,12 +264,14 @@ struct TransactionHistoryView: View {
     }
 }
 
-struct EmojiLabelStyle: LabelStyle {
-    let emoji: String
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 4) {
-            Text(emoji)
-            configuration.title
-        }
+extension Binding {
+    func onChange(_ handler: @escaping (Value) -> Void) -> Binding<Value> {
+        Binding(
+            get: { self.wrappedValue },
+            set: {
+                self.wrappedValue = $0
+                handler($0)
+            }
+        )
     }
 }

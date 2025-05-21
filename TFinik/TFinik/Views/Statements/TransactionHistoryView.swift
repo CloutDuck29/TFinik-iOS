@@ -245,23 +245,34 @@ struct TransactionHistoryView: View {
 
     func iconName(for category: String) -> String {
         switch category {
+        case "Кофейни": return "cup.and.saucer.fill"
         case "Магазины": return "cart.fill"
         case "Транспорт": return "bus.fill"
-        case "Переводы": return "arrow.left.arrow.right"
+        case "Доставка": return "bicycle" // Можно заменить на "car.fill" или "shippingbox.fill"
         case "Развлечения": return "gamecontroller.fill"
+        case "Пополнение": return "arrow.down.circle.fill"
+        case "ЖКХ": return "bolt.fill"
+        case "Переводы": return "arrow.left.arrow.right"
+        case "Другие": return "ellipsis.circle.fill"
         default: return "questionmark.circle"
         }
     }
 
     func iconColor(for category: String) -> Color {
         switch category {
+        case "Кофейни": return .brown
         case "Магазины": return .purple
         case "Транспорт": return .red
-        case "Переводы": return .orange
+        case "Доставка": return .green
         case "Развлечения": return .pink
+        case "Пополнение": return .blue
+        case "ЖКХ": return .yellow
+        case "Переводы": return .orange
+        case "Другие": return .gray
         default: return .gray
         }
     }
+
 }
 
 extension Binding {

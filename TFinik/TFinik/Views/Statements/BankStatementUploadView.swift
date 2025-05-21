@@ -146,7 +146,11 @@ struct BankStatementUploadView: View {
                     completed += 1
                     switch result {
                     case .success(let txs):
-                        allTransactions.append(contentsOf: txs)
+                        if txs.isEmpty {
+                            showFormatAlert = true
+                        } else {
+                            allTransactions.append(contentsOf: txs)
+                        }
                     case .failure(let error):
                         print("❌ Ошибка при загрузке \(bank): \(error.localizedDescription)")
                         let msg = error.localizedDescription.lowercased()
@@ -154,6 +158,7 @@ struct BankStatementUploadView: View {
                             showFormatAlert = true
                         }
                     }
+
 
                     if completed == total {
                         isUploading = false

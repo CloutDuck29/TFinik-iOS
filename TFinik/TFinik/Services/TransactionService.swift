@@ -79,9 +79,9 @@ final class TransactionService {
 
 
     // Обновление категории транзакции
-    func updateCategory(transactionID: Int, to newCategory: String, token: String) {
-        guard let url = URL(string: "http://10.255.255.239:8000/transactions/\(transactionID)") else {
-            print("❌ Invalid URL")
+    func updateCategory(transactionID: Int, to category: String, token: String, completion: ((Result<Void, Error>) -> Void)? = nil) {
+        guard let url = URL(string: "http://10.255.255.239:8000/transactions/\(transactionID)/category") else {
+            completion?(.failure(URLError(.badURL)))
             return
         }
 
@@ -90,18 +90,27 @@ final class TransactionService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        let body = ["category": newCategory]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        let body: [String: String] = ["category": category]
+        request.httpBody = try? JSONEncoder().encode(body)
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let httpResponse = response as? HTTPURLResponse {
-                print("🔁 PATCH Response: \(httpResponse.statusCode)")
-            }
-            if let error = error {
-                print("❌ PATCH Error: \(error.localizedDescription)")
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion?(.failure(error))
+                    return
+                }
+
+                guard let httpResponse = response as? HTTPURLResponse,
+                      (200...299).contains(httpResponse.statusCode) else {
+                    completion?(.failure(URLError(.badServerResponse)))
+                    return
+                }
+
+                completion?(.success(()))
             }
         }.resume()
     }
+
 
     // Получение всех транзакций
     func fetchAll(token: String, completion: @escaping (Result<[Transaction], Error>) -> Void) {

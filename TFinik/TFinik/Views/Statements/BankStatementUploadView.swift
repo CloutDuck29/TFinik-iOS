@@ -16,7 +16,7 @@ struct BankStatementUploadView: View {
     @State private var showAlert = false
     @State private var showPreview = false
     @State private var isUploading = false
-
+    @State private var showFormatAlert = false  // 🔥 Новый алерт
 
     private let supportedBanks = ["Tinkoff", "Sber"]
 
@@ -32,6 +32,9 @@ struct BankStatementUploadView: View {
                 message: Text("Пожалуйста, загрузите хотя бы одну выписку."),
                 dismissButton: .default(Text("OK"))
             )
+        }
+        .alert("❌ Вы загружаете выписку другого банка", isPresented: $showFormatAlert) {
+            Button("Понял", role: .cancel) { }
         }
         .sheet(item: $showingDocumentPickerForBank) { wrapper in
             DocumentPicker { url in
@@ -76,7 +79,7 @@ struct BankStatementUploadView: View {
             Text("(нажмите на иконку для загрузки)")
                 .font(.caption)
                 .foregroundColor(.gray)
-                .padding(.bottom, 12) // ✅ Добавлен отступ вниз
+                .padding(.bottom, 12) // ✅ Отступ
 
             LazyVGrid(columns: [GridItem(), GridItem()], spacing: 20) {
                 ForEach(supportedBanks, id: \.self) { bank in
@@ -99,7 +102,6 @@ struct BankStatementUploadView: View {
             }
         }
     }
-
 
     private func nextButtonView() -> some View {
         Button("Далее →") {
@@ -124,15 +126,15 @@ struct BankStatementUploadView: View {
     }
 
     private func handleUpload() {
-        guard !isUploading else { return } // защита от повторов
+        guard !isUploading else { return }
         guard !selectedFiles.isEmpty else {
             showAlert = true
             return
         }
 
-        isUploading = true // старт блокировки
-
+        isUploading = true
         transactionStore.clear()
+
         var completed = 0
         var allTransactions: [Transaction] = []
         let total = selectedFiles.count
@@ -147,11 +149,14 @@ struct BankStatementUploadView: View {
                         allTransactions.append(contentsOf: txs)
                     case .failure(let error):
                         print("❌ Ошибка при загрузке \(bank): \(error.localizedDescription)")
-                        // (опционально) можно показать алерт
+                        let msg = error.localizedDescription.lowercased()
+                        if msg.contains("не является выпиской") || msg.contains("unsupported") {
+                            showFormatAlert = true
+                        }
                     }
 
                     if completed == total {
-                        isUploading = false // ✅ сбрасываем после всех запросов
+                        isUploading = false
                         transactionStore.transactions = allTransactions
                         if !allTransactions.isEmpty {
                             showPreview = true
@@ -162,13 +167,10 @@ struct BankStatementUploadView: View {
         }
     }
 
-
     private func bankIconName(for bank: String) -> String {
         switch bank {
         case "Tinkoff": return "tinkoff_icon"
         case "Sber": return "sber_icon"
-        case "Alfa": return "alfa_icon"
-        case "VTB": return "vtb_icon"
         default: return "questionmark"
         }
     }

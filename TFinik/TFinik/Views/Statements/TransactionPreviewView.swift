@@ -86,8 +86,14 @@ struct TransactionPreviewView: View {
                                             transactionID: tx.id,
                                             to: cat,
                                             token: token
-                                        )
+                                        ) { _ in
+                                            Task {
+                                                await AnalyticsService.shared.fetchCategoryAnalytics()
+                                            }
+                                        }
                                     }
+
+
                                 } label: {
                                     Text(cat)
                                 }

@@ -160,24 +160,23 @@ struct BankStatementUploadView: View {
         for (bank, fileURL) in selectedFiles {
             let token = KeychainHelper.shared.readAccessToken() ?? ""
             TransactionService.shared.uploadStatement(fileURL: fileURL, bank: bank, token: token) { result in
-                DispatchQueue.main.async {
-                    completed += 1
-                    switch result {
-                    case .success(let txs):
-                        if txs.isEmpty {
-                            showFormatAlert = true
-                        } else {
-                            allTransactions.append(contentsOf: txs)
-                        }
-                    case .failure(let error):
-                        print("❌ Ошибка при загрузке \(bank): \(error.localizedDescription)")
-                        let msg = error.localizedDescription.lowercased()
-                        if msg.contains("не является выпиской") || msg.contains("unsupported") {
+                completed += 1
+
+                switch result {
+                case .success(let txs):
+                    allTransactions.append(contentsOf: txs)
+                case .failure(let error):
+                    print("❌ Ошибка при загрузке \(bank): \(error.localizedDescription)")
+                    let msg = error.localizedDescription.lowercased()
+                    if msg.contains("не является выпиской") || msg.contains("unsupported") {
+                        DispatchQueue.main.async {
                             showFormatAlert = true
                         }
                     }
+                }
 
-                    if completed == total {
+                if completed == total {
+                    DispatchQueue.main.async {
                         isUploading = false
                         transactionStore.transactions = allTransactions
                         if !allTransactions.isEmpty {

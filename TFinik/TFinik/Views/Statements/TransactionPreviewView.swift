@@ -5,7 +5,6 @@ struct TransactionPreviewView: View {
     @AppStorage("hasUploadedStatement") private var hasUploadedStatement = false
     @AppStorage("hasOnboarded") private var hasOnboarded = false
     @State private var navigateToAnalytics = false
-    
 
     let categories = ["Кофейни", "Магазины", "Транспорт", "Доставка", "Развлечения", "Пополнение", "ЖКХ", "Переводы", "Другие"]
 
@@ -28,6 +27,11 @@ struct TransactionPreviewView: View {
                 }
             }
             .ignoresSafeArea()
+            .onAppear {
+                Task {
+                    await transactionStore.fetchTransactions()
+                }
+            }
         }
         .navigationBarBackButtonHidden(true)
     }
@@ -92,8 +96,6 @@ struct TransactionPreviewView: View {
                                             }
                                         }
                                     }
-
-
                                 } label: {
                                     Text(cat)
                                 }

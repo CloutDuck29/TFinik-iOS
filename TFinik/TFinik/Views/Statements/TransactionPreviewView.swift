@@ -126,8 +126,11 @@ struct TransactionPreviewView: View {
 
                         Spacer()
 
+                        // ✅ Цвет: зелёный если Пополнение, иначе по знаку
+                        let amountColor: Color = tx.category == "Пополнение" ? .green : (tx.amount >= 0 ? .green : .red)
+
                         Text("\(tx.amount, specifier: "%.2f") ₽")
-                            .foregroundColor(tx.isIncome ? .green : .red)
+                            .foregroundColor(amountColor)
                             .fontWeight(.semibold)
                     }
 
@@ -136,7 +139,20 @@ struct TransactionPreviewView: View {
                             Button {
                                 if let index = transactionStore.transactions.firstIndex(where: { $0.id == tx.id }) {
                                     transactionStore.transactions[index].category = cat
+
+                                    if cat == "Пополнение" {
+                                        // 👇 Если выбрана Пополнение — делаем сумму положительной
+                                        if transactionStore.transactions[index].amount < 0 {
+                                            transactionStore.transactions[index].amount *= -1
+                                        }
+                                    } else {
+                                        // 👇 Если выбрана не Пополнение — делаем сумму отрицательной
+                                        if transactionStore.transactions[index].amount > 0 {
+                                            transactionStore.transactions[index].amount *= -1
+                                        }
+                                    }
                                 }
+
                                 if let token = KeychainHelper.shared.readAccessToken() {
                                     TransactionService.shared.updateCategory(
                                         transactionID: tx.id,
@@ -174,6 +190,8 @@ struct TransactionPreviewView: View {
         .padding(.top)
         .padding(.bottom, 32)
     }
+
+
 
     private var continueButton: some View {
         Button {

@@ -29,7 +29,6 @@ struct TransactionPreviewView: View {
             BackgroundView()
 
             VStack(spacing: 16) {
-                // Заголовок
                 VStack(spacing: 8) {
                     Spacer().frame(height: 20)
                     Text("Предпросмотр транзакций")
@@ -37,10 +36,8 @@ struct TransactionPreviewView: View {
                         .foregroundColor(.white)
                 }
 
-                // Фильтры
                 filterView
 
-                // Список или загрузка
                 if transactionStore.transactions.isEmpty {
                     loadingView
                 } else {
@@ -71,18 +68,15 @@ struct TransactionPreviewView: View {
     private var filterView: some View {
         let normalizedBank = selectedBank?.lowercased()
 
-        // Транзакции, подходящие под выбранный банк (или все)
         let bankFilteredTransactions = transactionStore.transactions.filter {
             normalizedBank == nil || $0.bank.lowercased() == normalizedBank
         }
 
-        // Месяцы только для этих транзакций
         let availableMonths = Array(Set(
             bankFilteredTransactions.map { String($0.date.prefix(7)) }
         )).sorted(by: >)
 
         return HStack(spacing: 24) {
-            // Месяц
             Picker("Месяц", selection: $selectedYearMonth) {
                 Text("Все месяцы").tag(String?.none)
                 ForEach(availableMonths, id: \.self) { ym in
@@ -92,7 +86,6 @@ struct TransactionPreviewView: View {
             .pickerStyle(MenuPickerStyle())
             .foregroundColor(.blue)
 
-            // Банк
             Picker("Банк", selection: $selectedBank) {
                 Text("Все банки").tag(String?.none)
                 ForEach(Array(Set(transactionStore.transactions.map { $0.bank.lowercased() })), id: \.self) { bank in
@@ -200,6 +193,4 @@ struct TransactionPreviewView: View {
         }
         .padding(.bottom, 32)
     }
-
-
 }

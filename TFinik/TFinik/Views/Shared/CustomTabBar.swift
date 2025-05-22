@@ -13,7 +13,7 @@ struct CustomTabBar: View {
         }
         .padding(.horizontal, 32)
         .padding(.vertical, 10)
-        .background(Color.clear) // прозрачный блюр фон
+        .background(Color.clear)
     }
 
     private func tabItem(icon: String, title: String, tab: String) -> some View {

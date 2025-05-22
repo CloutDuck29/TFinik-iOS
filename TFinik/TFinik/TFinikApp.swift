@@ -15,7 +15,7 @@ struct TFinikApp: App {
                     ContentView(hasOnboarded: $hasOnboarded)
                         .environmentObject(auth)
                         .environmentObject(transactionStore)
-                        .environmentObject(appState) // 👈 Передача AppState
+                        .environmentObject(appState) 
                 } else if !hasOnboarded {
                     OnboardingPagerView(hasOnboarded: $hasOnboarded)
                         .environmentObject(auth)

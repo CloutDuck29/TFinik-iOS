@@ -33,7 +33,6 @@ struct MainBabView: View {
                     TokenStorage.shared.refreshToken = nil
                     UserDefaults.standard.set(false, forKey: "hasOnboarded")
                     UserDefaults.standard.set(false, forKey: "hasUploadedStatement")
-                    // Перезапустить в ContentView — например, переключить isLoggedIn
                     auth.isLoggedIn = false
                 }
 

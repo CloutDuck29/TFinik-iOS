@@ -136,7 +136,6 @@ struct BankStatementUploadView: View {
         NavigationLink(
             destination: TransactionPreviewView(isInitialUpload: true)
                 .environmentObject(auth)
-
                 .environmentObject(transactionStore),
             isActive: $showPreview
         ) {

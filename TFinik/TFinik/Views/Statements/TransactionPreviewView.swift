@@ -15,8 +15,8 @@ struct TransactionPreviewView: View {
 
     private var filteredTransactions: [Transaction] {
         transactionStore.transactions.filter { tx in
-            let bankMatch = selectedBank == nil || tx.bank == selectedBank
-            let ym = String(tx.date.prefix(7)) // формат YYYY-MM
+            let bankMatch = selectedBank == nil || tx.bank.lowercased() == selectedBank
+            let ym = String(tx.date.prefix(7))
             let dateMatch = selectedYearMonth == nil || ym == selectedYearMonth
             return bankMatch && dateMatch
         }
@@ -35,10 +35,10 @@ struct TransactionPreviewView: View {
                         .foregroundColor(.white)
                 }
 
-                // Фильтры в одну строку
+                // Фильтры
                 filterView
 
-                // Список или прелоадер
+                // Список или загрузка
                 if transactionStore.transactions.isEmpty {
                     loadingView
                 } else {
@@ -66,13 +66,23 @@ struct TransactionPreviewView: View {
     }
 
     private var filterView: some View {
-        HStack(spacing: 24) {
+        let normalizedBank = selectedBank?.lowercased()
+
+        // Транзакции, подходящие под выбранный банк (или все)
+        let bankFilteredTransactions = transactionStore.transactions.filter {
+            normalizedBank == nil || $0.bank.lowercased() == normalizedBank
+        }
+
+        // Месяцы только для этих транзакций
+        let availableMonths = Array(Set(
+            bankFilteredTransactions.map { String($0.date.prefix(7)) }
+        )).sorted(by: >)
+
+        return HStack(spacing: 24) {
             // Месяц
             Picker("Месяц", selection: $selectedYearMonth) {
                 Text("Все месяцы").tag(String?.none)
-                ForEach(Array(Set(transactionStore.transactions.map {
-                    String($0.date.prefix(7))
-                })).sorted(by: >), id: \.self) { ym in
+                ForEach(availableMonths, id: \.self) { ym in
                     Text(ym).tag(String?.some(ym))
                 }
             }
@@ -82,8 +92,8 @@ struct TransactionPreviewView: View {
             // Банк
             Picker("Банк", selection: $selectedBank) {
                 Text("Все банки").tag(String?.none)
-                ForEach(Array(Set(transactionStore.transactions.map { $0.bank })), id: \.self) { bank in
-                    Text(bank).tag(String?.some(bank))
+                ForEach(Array(Set(transactionStore.transactions.map { $0.bank.lowercased() })), id: \.self) { bank in
+                    Text(bank.capitalized).tag(String?.some(bank))
                 }
             }
             .pickerStyle(MenuPickerStyle())
@@ -113,7 +123,7 @@ struct TransactionPreviewView: View {
                                 .font(.headline)
                                 .foregroundColor(.white)
 
-                            Text("\(tx.bank) • \(tx.date)")
+                            Text("\(tx.bank.capitalized) • \(tx.date)")
                                 .font(.caption)
                                 .foregroundColor(.gray)
                         }

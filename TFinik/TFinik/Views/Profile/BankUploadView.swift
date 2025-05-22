@@ -14,7 +14,7 @@ struct BankUploadEntry: Identifiable {
 struct BankUploadView: View {
     @EnvironmentObject var auth: AuthService
     @EnvironmentObject var transactionStore: TransactionStore
-    
+
     @State private var entries: [BankUploadEntry] = []
     @State private var selectedBank: String?
     @State private var isFileImporterPresented = false
@@ -40,6 +40,7 @@ struct BankUploadView: View {
                 }
                 .padding(.top, 40)
 
+                // Кнопка предпросмотра
                 Button(action: {
                     showTransactionPreview = true
                 }) {
@@ -53,6 +54,32 @@ struct BankUploadView: View {
                     .background(Color.white.opacity(0.1))
                     .cornerRadius(12)
                     .foregroundColor(.white)
+                }
+
+                // Кнопки загрузки для банков
+                HStack(spacing: 12) {
+                    ForEach(supportedBanks, id: \ .self) { bank in
+                        Button(action: {
+                            selectedBank = bank
+                            isFileImporterPresented = true
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(bank.lowercased() == "тинькофф" ? "tinkoff_icon" : "sber_icon")
+                                    .resizable()
+                                    .frame(width: 20, height: 20)
+                                    .cornerRadius(4)
+                                Text("Загрузить для \(bank)")
+                                    .font(.subheadline)
+                                    .bold()
+                            }
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.white.opacity(0.08))
+                            .cornerRadius(10)
+                            .foregroundColor(.white)
+                        }
+                    }
                 }
 
                 if isLoading {
@@ -69,22 +96,6 @@ struct BankUploadView: View {
                 } else {
                     ScrollView {
                         VStack(spacing: 24) {
-                            ForEach(supportedBanks, id: \.self) { bank in
-                                Button(action: {
-                                    selectedBank = bank
-                                    isFileImporterPresented = true
-                                }) {
-                                    HStack {
-                                        Image(systemName: "plus.circle")
-                                        Text("Загрузить выписку для \(bank)")
-                                    }
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.white.opacity(0.1))
-                                    .cornerRadius(12)
-                                }
-                            }
-
                             ForEach(entries) { entry in
                                 BankUploadCard(entry: entry, onUpload: {
                                     selectedBank = entry.bankName
@@ -129,11 +140,8 @@ struct BankUploadView: View {
                                     fetchStatements()
 
                                 case .failure(let error):
-                                    print("❌ Ошибка при загрузке: \(error.localizedDescription)")
-
-                                    // Универсальная проверка
                                     let message = error.localizedDescription.lowercased()
-                                    print("🧪 Получена ошибка: \(message)")
+                                    print("❌ Ошибка при загрузке: \(error.localizedDescription)")
 
                                     if message.contains("не является выпиской") ||
                                        message.contains("unsupported") ||
@@ -144,11 +152,8 @@ struct BankUploadView: View {
                                     } else if message.contains("уже загружена") || message.contains("duplicate") {
                                         showDuplicateAlert = true
                                     } else {
-                                        showFormatAlert = true // на всякий случай
+                                        showFormatAlert = true
                                     }
-
-
-                                    print("❌ Ошибка при загрузке: \(error.localizedDescription)")
                                 }
                             }
                         }
@@ -157,7 +162,6 @@ struct BankUploadView: View {
                     print("Ошибка загрузки файла: \(error.localizedDescription)")
                 }
             }
-
         }
         .alert("⚠️ Такая выписка уже загружена", isPresented: $showDuplicateAlert) {
             Button("Ок", role: .cancel) { }
@@ -252,7 +256,7 @@ struct BankUploadCard: View {
                         .foregroundColor(.white)
 
                     LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 6), spacing: 8) {
-                        ForEach(1...12, id: \.self) { month in
+                        ForEach(1...12, id: \ .self) { month in
                             let isUploaded = chunk.months[month] ?? false
                             Text(threeLetterMonthName(month))
                                 .font(.caption2)

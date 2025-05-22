@@ -16,13 +16,18 @@ struct TransactionPreviewView: View {
     let categories = ["Кофейни", "Магазины", "Транспорт", "Доставка", "Развлечения", "Пополнение", "ЖКХ", "Переводы", "Другие"]
 
     private var filteredTransactions: [Transaction] {
-        transactionStore.transactions.filter { tx in
-            let bankMatch = selectedBank == nil || tx.bank.lowercased() == selectedBank
-            let ym = String(tx.date.prefix(7))
-            let dateMatch = selectedYearMonth == nil || ym == selectedYearMonth
-            return bankMatch && dateMatch
-        }
+        transactionStore.transactions
+            .filter { tx in
+                let bankMatch = selectedBank == nil || tx.bank.lowercased() == selectedBank
+                let ym = String(tx.date.prefix(7))
+                let dateMatch = selectedYearMonth == nil || ym == selectedYearMonth
+                return bankMatch && dateMatch
+            }
+            .sorted { lhs, rhs in
+                lhs.date > rhs.date  // ← сортировка по убыванию (новые сверху)
+            }
     }
+
 
     var body: some View {
         ZStack {

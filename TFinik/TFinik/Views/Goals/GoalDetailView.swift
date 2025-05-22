@@ -36,6 +36,25 @@ struct GoalDetailView: View {
                     }
                     .padding(.horizontal)
 
+                    // 🔹 Добавленный расчет суммы в день
+                    if let deadline = goal.deadline,
+                       let daysLeft = Calendar.current.dateComponents([.day], from: Date(), to: deadline).day,
+                       daysLeft > 0 {
+                        let remaining = goal.targetAmount - goal.currentAmount
+                        let perDay = remaining / Double(daysLeft)
+
+                        VStack(spacing: 8) {
+                            Text("Осталось дней: \(daysLeft)")
+                                .foregroundColor(.gray)
+                                .font(.subheadline)
+
+                            Text("Нужно откладывать по \(Int(perDay))₽ в день")
+                                .foregroundColor(.white)
+                                .font(.headline)
+                        }
+                        .padding(.top, 10)
+                    }
+
                     HStack(spacing: 20) {
                         Button("Редактировать") {
                             isEditing = true

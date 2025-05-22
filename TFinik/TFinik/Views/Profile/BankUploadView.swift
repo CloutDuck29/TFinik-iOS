@@ -169,7 +169,7 @@ struct BankUploadView: View {
             Button("Понял", role: .cancel) { }
         }
         .sheet(isPresented: $showTransactionPreview) {
-            TransactionPreviewView()
+            TransactionPreviewView(isInitialUpload: false)
                 .environmentObject(transactionStore)
         }
         .onAppear {

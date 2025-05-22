@@ -6,6 +6,8 @@ struct TransactionPreviewView: View {
     @AppStorage("hasOnboarded") private var hasOnboarded = false
     @State private var navigateToAnalytics = false
 
+    let isInitialUpload: Bool  // ← добавлен флаг
+
     let categories = ["Кофейни", "Магазины", "Транспорт", "Доставка", "Развлечения", "Пополнение", "ЖКХ", "Переводы", "Другие"]
 
     var body: some View {
@@ -19,7 +21,11 @@ struct TransactionPreviewView: View {
                     loadingView
                 } else {
                     transactionListView
-                    continueButton
+
+                    // Показываем кнопку "Продолжить" только при первичной загрузке
+                    if isInitialUpload {
+                        continueButton
+                    }
                 }
 
                 NavigationLink(destination: ExpensesChartView(), isActive: $navigateToAnalytics) {

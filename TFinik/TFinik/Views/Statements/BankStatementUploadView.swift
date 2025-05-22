@@ -8,6 +8,8 @@ struct BankWrapper: Identifiable {
 
 struct BankStatementUploadView: View {
     @EnvironmentObject var transactionStore: TransactionStore
+    @EnvironmentObject var auth: AuthService
+
     @AppStorage("hasOnboarded") private var hasOnboarded = false
     @AppStorage("hasUploadedStatement") private var hasUploadedStatement = false
 
@@ -133,6 +135,8 @@ struct BankStatementUploadView: View {
     private var navigationLink: some View {
         NavigationLink(
             destination: TransactionPreviewView(isInitialUpload: true)
+                .environmentObject(auth)
+
                 .environmentObject(transactionStore),
             isActive: $showPreview
         ) {

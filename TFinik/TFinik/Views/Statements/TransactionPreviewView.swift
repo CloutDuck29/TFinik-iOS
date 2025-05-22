@@ -2,12 +2,14 @@ import SwiftUI
 
 struct TransactionPreviewView: View {
     @EnvironmentObject var transactionStore: TransactionStore
+    @EnvironmentObject var auth: AuthService
     @AppStorage("hasUploadedStatement") private var hasUploadedStatement = false
     @AppStorage("hasOnboarded") private var hasOnboarded = false
-    @State private var navigateToAnalytics = false
-
     @State private var selectedBank: String? = nil
     @State private var selectedYearMonth: String? = nil
+    @AppStorage("selectedTab") private var selectedTab: String = "expenses"
+    @State private var showMainBab = false
+
 
     let isInitialUpload: Bool
 
@@ -50,10 +52,6 @@ struct TransactionPreviewView: View {
                         continueButton
                     }
                 }
-
-                NavigationLink(destination: ExpensesChartView(), isActive: $navigateToAnalytics) {
-                    EmptyView()
-                }
             }
             .ignoresSafeArea(edges: .bottom)
             .onAppear {
@@ -61,6 +59,11 @@ struct TransactionPreviewView: View {
                     await transactionStore.fetchTransactions()
                 }
             }
+        }
+        .fullScreenCover(isPresented: $showMainBab) {
+            MainBabView()
+                .environmentObject(auth)
+                .environmentObject(transactionStore)
         }
         .navigationBarBackButtonHidden(true)
     }
@@ -183,7 +186,8 @@ struct TransactionPreviewView: View {
         Button {
             hasUploadedStatement = true
             hasOnboarded = true
-            navigateToAnalytics = true
+            selectedTab = "expenses"
+            showMainBab = true
         } label: {
             Text("Продолжить")
                 .font(.headline)
@@ -196,4 +200,6 @@ struct TransactionPreviewView: View {
         }
         .padding(.bottom, 32)
     }
+
+
 }

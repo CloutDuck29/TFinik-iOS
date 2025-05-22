@@ -6,6 +6,7 @@ enum OnboardingStep: Int, CaseIterable {
 
 struct OnboardingPagerView: View {
     @State private var currentStep: OnboardingStep = .intro
+    @EnvironmentObject var auth: AuthService
     @Binding var hasOnboarded: Bool
     @State private var navigateToUpload = false
 
@@ -56,6 +57,7 @@ struct OnboardingPagerView: View {
 
                 NavigationLink(
                     destination: BankStatementUploadView()
+                        .environmentObject(auth)
                         .environmentObject(TransactionStore()),
                     isActive: $navigateToUpload
                 ) {

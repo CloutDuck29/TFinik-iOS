@@ -1,4 +1,4 @@
-// MARK: основной сервис для работы с портретом месяца пользователя
+// MARK: - основной сервис для работы с портретом месяца пользователя
 
 import Foundation
 
@@ -8,7 +8,7 @@ enum PortraitAPIError: Error {
     case decoding(Error)
     case network(Error)
 }
-
+// MARK: - отправляет get запрос, добавляет токен, получает json, возвращает результат
 struct PortraitService {
     static func fetchPortrait(month: Int, year: Int, token: String, completion: @escaping (Result<MonthPortraitResponse, PortraitAPIError>) -> Void) {
         var components = URLComponents(string: "http://10.255.255.239:8000/portrait")!

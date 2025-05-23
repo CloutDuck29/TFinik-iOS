@@ -1,3 +1,5 @@
+// MARK: - Окно истории операций
+
 import SwiftUI
 
 struct TransactionHistoryView: View {
@@ -248,7 +250,7 @@ struct TransactionHistoryView: View {
         case "Кофейни": return "cup.and.saucer.fill"
         case "Магазины": return "cart.fill"
         case "Транспорт": return "bus.fill"
-        case "Доставка": return "bicycle" // Можно заменить на "car.fill" или "shippingbox.fill"
+        case "Доставка": return "bicycle"
         case "Развлечения": return "gamecontroller.fill"
         case "Пополнение": return "arrow.down.circle.fill"
         case "ЖКХ": return "bolt.fill"

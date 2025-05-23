@@ -1,3 +1,5 @@
+// MARK: - График расходов
+
 import SwiftUI
 import Charts
 

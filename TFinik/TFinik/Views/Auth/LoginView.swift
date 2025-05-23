@@ -1,3 +1,5 @@
+// MARK: - Окно авторизации
+
 import SwiftUI
 
 struct LoginView: View {
@@ -159,12 +161,5 @@ struct LoginView: View {
         body.append("\r\n".data(using: .utf8)!)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         return body
-    }
-}
-
-struct LoginView_Previews: PreviewProvider {
-    static var previews: some View {
-        LoginView()
-            .preferredColorScheme(.dark)
     }
 }

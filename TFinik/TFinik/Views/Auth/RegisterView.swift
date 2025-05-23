@@ -1,3 +1,5 @@
+// MARK: - Окно регистрации
+
 import SwiftUI
 
 struct RegisterView: View {
@@ -104,12 +106,5 @@ struct RegisterView: View {
                 }
             }
         }
-    }
-}
-
-struct RegisterView_Previews: PreviewProvider {
-    static var previews: some View {
-        RegisterView(hasOnboarded: .constant(false))
-            .preferredColorScheme(.dark)
     }
 }

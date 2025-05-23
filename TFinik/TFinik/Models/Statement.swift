@@ -1,3 +1,5 @@
+// MARK: - модель для выписок
+
 import Foundation
 
 struct Statement: Identifiable, Decodable {

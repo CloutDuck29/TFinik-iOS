@@ -1,3 +1,5 @@
+// MARK: - модель для портрета (получение с сервера)
+
 import Foundation
 
 struct MonthPortraitResponse: Decodable {

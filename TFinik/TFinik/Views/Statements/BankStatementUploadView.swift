@@ -1,3 +1,5 @@
+// MARK: - Окно первичной загрузки выписки
+
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -63,7 +65,7 @@ struct BankStatementUploadView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
     }
-
+    // MARK: - контентная часть
     private var content: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -86,7 +88,7 @@ struct BankStatementUploadView: View {
             .padding(.horizontal)
         }
     }
-
+    // MARK: - Отображение банков
     private func bankGridView() -> some View {
         VStack(spacing: 4) {
             Text("Банки-партнеры")
@@ -119,7 +121,7 @@ struct BankStatementUploadView: View {
             }
         }
     }
-
+    // MARK: - Кнопка далее
     private func nextButtonView() -> some View {
         Button("Далее →") {
             handleUpload()
@@ -142,7 +144,7 @@ struct BankStatementUploadView: View {
             EmptyView()
         }
     }
-
+    // MARK: - Загрузка и ошибки
     private func handleUpload() {
         guard !isUploading else { return }
         guard !selectedFiles.isEmpty else {

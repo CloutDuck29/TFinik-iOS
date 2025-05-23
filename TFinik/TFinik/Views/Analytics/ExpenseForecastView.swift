@@ -1,3 +1,5 @@
+// MARK: - Прогноз расходов
+
 import SwiftUI
 import Charts
 

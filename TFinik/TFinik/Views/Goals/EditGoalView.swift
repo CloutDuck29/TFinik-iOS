@@ -1,3 +1,5 @@
+// MARK: - Редактирование финансовой цели
+
 import SwiftUI
 
 struct EditGoalView: View {

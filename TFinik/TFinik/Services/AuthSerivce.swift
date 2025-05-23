@@ -1,10 +1,12 @@
+// MARK: Обеспечивает аутентификацию пользователя с помощью email и пароля, сохраняет токены и отслеживает статус входа
+
 import Foundation
 
 @MainActor
 final class AuthService: ObservableObject {
-    @Published var isLoggedIn = false
-    @Published var errorMessage: String?
-    var accessToken: String? {
+    @Published var isLoggedIn = false //статус входа
+    @Published var errorMessage: String? //хранение ошибки
+    var accessToken: String? { //токен из keychain
         KeychainHelper.shared.readAccessToken()
     }
 
@@ -17,7 +19,7 @@ final class AuthService: ObservableObject {
         }
     }
 
-
+//MARK: - отправляет POST-ЗАПРОС, получает токены, сохраняет их в TokenStorage и KeyChain, обновляет флаг isLoggedIn
     func login(email: String, password: String) async {
         errorMessage = nil
 
@@ -53,7 +55,7 @@ final class AuthService: ObservableObject {
             errorMessage = error.localizedDescription
         }
     }
-
+//MARK: - отправляет POST-ЗАПРОС, если регистрация успешна - сбрасывает токены, онбординг и вызывает логин
     @MainActor
     func register(email: String, password: String) async -> Bool {
         errorMessage = nil
@@ -94,11 +96,11 @@ final class AuthService: ObservableObject {
 
         return false
     }
-
+//MARK: - проверка актуальности и наличия токена
     func isTokenAvailable() -> Bool {
         return KeychainHelper.shared.readAccessToken() != nil
     }
-
+//MARK: - отправляет refresh_token на auth/refresh и получает новые токены и сохраняет их, используется для обновления, в случае устаревания.
     @MainActor
     func refreshAccessTokenIfNeeded() async -> Bool {
         guard let refreshToken = TokenStorage.shared.refreshToken else { return false }

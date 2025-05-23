@@ -1,3 +1,5 @@
+// MARK: - Менюшка приложения
+
 import SwiftUI
 
 struct MainBabView: View {
@@ -19,7 +21,7 @@ struct MainBabView: View {
                         .environmentObject(transactionStore)
                 case "profile":
                     ProfileMenuView()
-                        .environmentObject(auth) // ✅ обязательно!
+                        .environmentObject(auth)
                         .environmentObject(transactionStore)
                 default:
                     ExpensesChartView()

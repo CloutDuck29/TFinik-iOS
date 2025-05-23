@@ -1,3 +1,5 @@
+// MARK: - Дизайн менюшки и отображение иконок
+
 import SwiftUI
 
 struct CustomTabBar: View {

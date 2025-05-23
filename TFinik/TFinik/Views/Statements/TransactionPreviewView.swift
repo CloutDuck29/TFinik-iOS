@@ -1,3 +1,5 @@
+// MARK: - Окно предпросмотра транзакций с сортировкой и фильтрами
+
 import SwiftUI
 
 struct TransactionPreviewView: View {
@@ -10,9 +12,7 @@ struct TransactionPreviewView: View {
     @AppStorage("selectedTab") private var selectedTab: String = "expenses"
     @State private var showMainBab = false
 
-
     let isInitialUpload: Bool
-
     let categories = ["Кофейни", "Магазины", "Транспорт", "Доставка", "Развлечения", "Пополнение", "ЖКХ", "Переводы", "Другие"]
 
     private var filteredTransactions: [Transaction] {
@@ -24,7 +24,7 @@ struct TransactionPreviewView: View {
                 return bankMatch && dateMatch
             }
             .sorted { lhs, rhs in
-                lhs.date > rhs.date  // ← сортировка по убыванию (новые сверху)
+                lhs.date > rhs.date  //сортировка по убыванию
             }
     }
 
@@ -104,6 +104,7 @@ struct TransactionPreviewView: View {
         .padding(.horizontal)
     }
 
+    //Загрузка транзакций, в случае если долго грузится
     private var loadingView: some View {
         VStack {
             Spacer()
@@ -131,9 +132,8 @@ struct TransactionPreviewView: View {
 
                         Spacer()
 
-                        // ✅ Цвет: зелёный если Пополнение, иначе по знаку
+                        //Зеленый пополнение, если не пополнение - красный
                         let amountColor: Color = tx.category == "Пополнение" ? .green : (tx.amount >= 0 ? .green : .red)
-
                         Text("\(tx.amount, specifier: "%.2f") ₽")
                             .foregroundColor(amountColor)
                             .fontWeight(.semibold)
@@ -146,12 +146,12 @@ struct TransactionPreviewView: View {
                                     transactionStore.transactions[index].category = cat
 
                                     if cat == "Пополнение" {
-                                        // 👇 Если выбрана Пополнение — делаем сумму положительной
+                                        //Смена знака в случае пополнения
                                         if transactionStore.transactions[index].amount < 0 {
                                             transactionStore.transactions[index].amount *= -1
                                         }
                                     } else {
-                                        // 👇 Если выбрана не Пополнение — делаем сумму отрицательной
+                                        //Смена знака в случае не пополнения
                                         if transactionStore.transactions[index].amount > 0 {
                                             transactionStore.transactions[index].amount *= -1
                                         }

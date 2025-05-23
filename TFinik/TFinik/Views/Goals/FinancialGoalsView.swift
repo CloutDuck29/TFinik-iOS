@@ -1,3 +1,5 @@
+// MARK: - Общий просмотр финансовых целей
+
 import SwiftUI
 
 struct FinancialGoalsView: View {

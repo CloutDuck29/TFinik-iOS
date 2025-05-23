@@ -1,10 +1,11 @@
-// MARK: Основной сервис работы с целями (выполняет запросы к API)
+// MARK: - Основной сервис работы с целями (выполняет запросы к API)
 
 import Foundation
 
 class GoalService {
     private let baseURL = "http://10.255.255.239:8000"
-
+    
+// MARK: - общая функция для установки токена и создания запросов на сервер
     private func makeRequest(
         path: String,
         method: String,
@@ -41,7 +42,8 @@ class GoalService {
 
         return request
     }
-
+    
+// MARK: - делает запрос get /goals, получает список целей, декодирует и возвращает
     func fetchGoals(completion: @escaping (Result<[FinancialGoalDTO], Error>) -> Void) {
         guard let request = makeRequest(path: "/goals/", method: "GET") else { return }
 
@@ -71,7 +73,7 @@ class GoalService {
             }
         }.resume()
     }
-
+// MARK: - делает post запрос, отправляет имя, сумму и сроки, возвращает результат
     func createGoal(name: String, targetAmount: Double, deadline: Date?, completion: @escaping (Result<Void, Error>) -> Void) {
         var payload: [String: Any] = [
             "name": name,
@@ -96,7 +98,7 @@ class GoalService {
             }
         }.resume()
     }
-
+// MARK: - делает patch запрос, обновляет имя, сумму, срок и возвращает
     func updateGoal(id: Int, name: String?, targetAmount: Double?, deadline: Date?, completion: @escaping (Result<Void, Error>) -> Void) {
         var payload: [String: Any] = [:]
 
@@ -124,7 +126,7 @@ class GoalService {
             }
         }.resume()
     }
-
+// MARK: - делает post запрос, добавляет сумму в цель, возвращает результат
     func addAmount(to goalId: Int, amount: Double, completion: @escaping (Result<Void, Error>) -> Void) {
         let payload = ["amount": amount]
         guard let request = makeRequest(path: "/goals/\(goalId)/add", method: "POST", payload: payload) else { return }

@@ -1,3 +1,5 @@
+// MARK: - Прогнозирование расходов. Отправляет список транзакций на бэк и получает прогнозы трат по месяцам и по категориям.
+
 import Foundation
 
 // MARK: - Модель одного пункта прогноза
@@ -48,6 +50,7 @@ struct ForecastPayload: Codable {
 final class ForecastService {
     static let shared = ForecastService()
 
+// MARK: - Отправляет все транзакции на forecast и получает прогноз по месяцам.
     func fetchForecast(transactions: [Transaction], completion: @escaping (Result<[ExpenseForecastItem], Error>) -> Void) {
         let simplified = transactions.map {
             TransactionForForecast(
@@ -109,7 +112,7 @@ final class ForecastService {
             }
         }.resume()
     }
-
+// MARK: - Отправляет все транзакции + параметр месяц на forecast/categories/month=.. Получает прогноз по категориям за выбранный месяц.
     func fetchCategoryForecast(month: String, transactions: [Transaction], completion: @escaping (Result<[ExpenseForecastCategory], Error>) -> Void) {
         guard var urlComponents = URLComponents(string: "http://10.255.255.239:8000/forecast/categories/") else {
             completion(.failure(NSError(domain: "Invalid URL", code: -1)))

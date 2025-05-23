@@ -1,3 +1,5 @@
+// MARK: - Для градиента
+
 import SwiftUI
 
 extension Color {

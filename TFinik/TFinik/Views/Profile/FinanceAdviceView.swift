@@ -1,3 +1,5 @@
+// MARK: - Окно советов
+
 import SwiftUI
 
 struct AdviceItem: Decodable, Identifiable {

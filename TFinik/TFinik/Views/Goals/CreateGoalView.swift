@@ -1,3 +1,5 @@
+// MARK: - Создание финансовой цели
+
 import SwiftUI
 
 struct CreateGoalView: View {

@@ -1,3 +1,5 @@
+// MARK: - модель для отслеживания доходов
+
 import Foundation
 
 struct IncomeEntry: Identifiable, Decodable, Equatable {

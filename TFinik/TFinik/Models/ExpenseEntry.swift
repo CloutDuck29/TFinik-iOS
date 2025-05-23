@@ -1,3 +1,5 @@
+//MARK: - модель траты для графика или истории трат (месяц, категория, сумма, описание).
+
 import Foundation
 
 struct ExpenseEntry: Identifiable, Decodable, Equatable {

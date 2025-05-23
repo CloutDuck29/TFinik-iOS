@@ -1,3 +1,5 @@
+// MARK: - универсальный HTTP клиент для работы с API в Swift с использованием асинхронности.
+
 import Foundation
 
 enum APIError: Error {
@@ -5,9 +7,11 @@ enum APIError: Error {
 }
 
 final class APIClient {
-  static let shared = APIClient()
-  private let baseURL = URL(string: "http://10.255.255.239:8000")!  // или ваш прод‑URL
+  static let shared = APIClient() //синглтон для вызова API
+  private let baseURL = URL(string: "http://10.255.255.239:8000")!
 
+//метод для отправки запросов get, post, и декодирования ответа с сервера
+//добавляет authorization-токен из keychain, устанавливает content-type (json), проверяет статус ответа, декодирует json в нужную модель, бросает ошибки в случае необходимости
   func request<T: Decodable>(
     _ method: String = "GET",
     path: String,

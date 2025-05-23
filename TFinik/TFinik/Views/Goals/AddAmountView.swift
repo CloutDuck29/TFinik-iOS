@@ -1,3 +1,5 @@
+// MARK: - Добавление суммы к цели
+
 import SwiftUI
 
 struct AddAmountView: View {

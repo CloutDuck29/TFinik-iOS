@@ -4,7 +4,7 @@ import SwiftUI
 struct TFinikApp: App {
     @StateObject private var auth = AuthService()
     @StateObject private var transactionStore = TransactionStore()
-    @StateObject private var appState = AppState() // 👈 Добавлено
+    @StateObject private var appState = AppState()
     @AppStorage("hasOnboarded") private var hasOnboarded = false
     @AppStorage("hasUploadedStatement") private var hasUploadedStatement = false
 

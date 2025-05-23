@@ -1,3 +1,5 @@
+// MARK: - График доходов
+
 import SwiftUI
 import Charts
 

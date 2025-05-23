@@ -1,3 +1,5 @@
+// MARK: - Подробное описание финансовой цели
+
 import SwiftUI
 
 struct GoalDetailView: View {

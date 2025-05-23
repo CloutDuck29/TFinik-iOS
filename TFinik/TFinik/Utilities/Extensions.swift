@@ -3,6 +3,7 @@
 import Foundation
 import SwiftUI
 
+//Список категорий
 extension String {
     var expenseCategoryColor: Color {
         switch self {
@@ -20,6 +21,7 @@ extension String {
     }
 }
 
+//Формат работы с датами
 extension Date {
     func iso8601String() -> String {
         let formatter = ISO8601DateFormatter()
@@ -28,6 +30,7 @@ extension Date {
     }
 }
 
+//Формат для работы с массивами без повторяющихся элементов, сохраняя оригинальный порядок появления
 extension Sequence where Element: Hashable {
     func uniqued() -> [Element] {
         var seen = Set<Element>()
@@ -35,6 +38,7 @@ extension Sequence where Element: Hashable {
     }
 }
 
+//Формат для работы с данными
 extension Data {
     mutating func append(_ string: String) {
         if let data = string.data(using: .utf8) {
